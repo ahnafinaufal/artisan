@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
+/*
+  Bridge HeroUI v3 CSS tokens → Tailwind v4 @theme
+  HeroUI mendefinisikan: --background, --foreground, --accent, --muted, dll.
+  Tailwind v4 memetakan bg-background → --color-background, dst.
+*/
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-overlay: var(--overlay);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-surface: var(--accent-surface);
+
+  --color-primary: var(--default);
+  --color-primary-foreground: var(--default-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+}
+
+/* HeroUI Pro Recharts Theming */
+.heroui-chart .recharts-cartesian-axis-tick-value {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.heroui-chart .recharts-cartesian-axis-line,
+.heroui-chart .recharts-cartesian-axis-tick-line {
+  display: none;
+}
+.heroui-chart .recharts-cartesian-grid line {
+  stroke: var(--muted);
+  stroke-opacity: 0.16;
+}
+.heroui-chart .recharts-tooltip-cursor {
+  stroke: var(--muted);
+  stroke-dasharray: 4 4;
+  stroke-opacity: 0.5;
+}
+.heroui-chart .recharts-active-dot circle {
+  stroke: var(--surface);
+  stroke-width: 2px;
+}
+.pie-chart .recharts-pie-sector path {
+  stroke: none;
+}
+.pie-chart .recharts-tooltip-cursor {
+  display: none;
+}
+.radial-chart .recharts-tooltip-cursor {
+  display: none;
+}
+.radial-chart .recharts-radial-bar-background-sector {
+  fill: var(--surface-secondary);
+}
+.radar-chart .recharts-polar-angle-axis-tick-value {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.radar-chart .recharts-polar-radius-axis-tick-value {
+  font-size: 10px;
+  fill: var(--muted);
+}
+.radar-chart .recharts-tooltip-cursor {
+  display: none;
+}
