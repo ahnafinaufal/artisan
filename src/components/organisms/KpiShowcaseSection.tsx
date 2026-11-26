@@ -80,7 +80,7 @@ function buildSmoothAreaPath(pts: Array<{ x: number; y: number }>): string {
  * AreaChart lengkap dengan Y-axis ($0k-$12k), X-axis (Jan-Dec), crosshair, dan tooltip hover.
  */
 function MonthlyRevenueChart() {
-  const [activeIdx, setActiveIdx] = useState<number | null>(6); // default Jul seperti di docs
+  const [activeIdx, setActiveIdx] = useState<number | null>(6);
   const width = 640;
   const height = 220;
   const maxVal = 12000;
@@ -102,14 +102,12 @@ function MonthlyRevenueChart() {
         Monthly Revenue
       </h3>
       <div className="flex gap-3">
-        {/* Y-Axis Labels */}
         <div className="flex h-[220px] flex-col justify-between text-right text-xs text-muted">
           {yTicks.map((tick) => (
             <span key={tick}>${tick / 1000}k</span>
           ))}
         </div>
 
-        {/* Chart Area */}
         <div className="relative flex-1">
           <div className="relative h-[220px] w-full">
             {activePt ? (
@@ -144,7 +142,6 @@ function MonthlyRevenueChart() {
                 </linearGradient>
               </defs>
 
-              {/* Horizontal Grid Lines */}
               {yTicks.map((tick) => {
                 const y = height - (tick / maxVal) * height;
                 return (
@@ -185,7 +182,6 @@ function MonthlyRevenueChart() {
               ))}
             </svg>
 
-            {/* Smooth animated crosshair & active dot */}
             {activePt ? (
               <>
                 <div
@@ -203,7 +199,6 @@ function MonthlyRevenueChart() {
             ) : null}
           </div>
 
-          {/* X-Axis Labels */}
           <div className="mt-2 flex justify-between text-xs text-muted">
             {MONTHLY_REVENUE.map((d) => (
               <span key={d.month}>{d.month}</span>
@@ -231,58 +226,148 @@ export function KpiShowcaseSection() {
         </p>
       </div>
 
-      {/* 1. Usage */}
+      {/* 1. With Icon */}
       <div className="space-y-3">
-        <h3 className="text-base font-semibold text-foreground">Usage</h3>
+        <h3 className="text-base font-semibold text-foreground">With Icon</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <KPI>
             <KPI.Header>
-              <KPI.Title>Total Revenue</KPI.Title>
+              <KPI.Icon status="success">
+                <Users className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Total Users</KPI.Title>
             </KPI.Header>
             <KPI.Content>
-              <div className="flex items-center justify-between gap-2">
-                <KPI.Value value={228451} prefix="$" />
+              <div className="flex items-end justify-between gap-2">
+                <KPI.Value value={5400} />
                 <KPI.Trend trend="up">+33%</KPI.Trend>
               </div>
             </KPI.Content>
           </KPI>
+
           <KPI>
             <KPI.Header>
-              <KPI.Title>Total Expenses</KPI.Title>
+              <KPI.Icon status="warning">
+                <DollarSign className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Total Sales</KPI.Title>
             </KPI.Header>
             <KPI.Content>
-              <div className="flex items-center justify-between gap-2">
-                <KPI.Value value={71887} prefix="$" />
-                <KPI.Trend trend="down">+13.0%</KPI.Trend>
-              </div>
-            </KPI.Content>
-          </KPI>
-          <KPI>
-            <KPI.Header>
-              <KPI.Title>Total Profit</KPI.Title>
-            </KPI.Header>
-            <KPI.Content>
-              <div className="flex items-center justify-between gap-2">
-                <KPI.Value value={156540} prefix="$" />
+              <div className="flex items-end justify-between gap-2">
+                <KPI.Value value={15400} prefix="$" />
                 <KPI.Trend trend="neutral">0.0%</KPI.Trend>
               </div>
             </KPI.Content>
           </KPI>
+
           <KPI>
             <KPI.Header>
-              <KPI.Title>New Customers</KPI.Title>
+              <KPI.Icon status="danger">
+                <Tag className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Net Profit</KPI.Title>
             </KPI.Header>
             <KPI.Content>
-              <div className="flex items-center justify-between gap-2">
-                <KPI.Value value={1234} />
-                <KPI.Trend trend="up">+1.0%</KPI.Trend>
+              <div className="flex items-end justify-between gap-2">
+                <KPI.Value value={10400} prefix="$" />
+                <KPI.Trend trend="down">-3.3%</KPI.Trend>
               </div>
             </KPI.Content>
           </KPI>
         </div>
       </div>
 
-      {/* 2. With Chart Bottom */}
+      {/* 2. With Actions */}
+      <div className="space-y-3">
+        <h3 className="text-base font-semibold text-foreground">With Actions</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="success">
+                <ShoppingCart className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Conversion Rate</KPI.Title>
+            </KPI.Header>
+            <KPI.Actions />
+            <KPI.Content>
+              <div className="flex items-end justify-between gap-2">
+                <KPI.Value value="3.8%" />
+                <KPI.Trend trend="up">+1.7%</KPI.Trend>
+              </div>
+            </KPI.Content>
+          </KPI>
+
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="danger">
+                <FileText className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Bounce Rate</KPI.Title>
+            </KPI.Header>
+            <KPI.Actions />
+            <KPI.Content>
+              <div className="flex items-end justify-between gap-2">
+                <KPI.Value value="42.3%" />
+                <KPI.Trend trend="down">-5.9%</KPI.Trend>
+              </div>
+            </KPI.Content>
+          </KPI>
+
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="warning">
+                <Scan className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Load Time</KPI.Title>
+            </KPI.Header>
+            <KPI.Actions />
+            <KPI.Content>
+              <KPI.Value value="856" />
+              <KPI.Progress value={66} color="warning" />
+            </KPI.Content>
+          </KPI>
+        </div>
+      </div>
+
+      {/* 3. With Footer */}
+      <div className="space-y-3">
+        <h3 className="text-base font-semibold text-foreground">With Footer</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="success">
+                <Users className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Total Subscribers</KPI.Title>
+              <div className="ml-auto">
+                <KPI.Trend trend="up">+122</KPI.Trend>
+              </div>
+            </KPI.Header>
+            <KPI.Content>
+              <KPI.Value value={71897} />
+            </KPI.Content>
+            <KPI.Footer>View all</KPI.Footer>
+          </KPI>
+
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="warning">
+                <DollarSign className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Monthly Revenue</KPI.Title>
+              <div className="ml-auto">
+                <KPI.Trend trend="up">+20.1%</KPI.Trend>
+              </div>
+            </KPI.Header>
+            <KPI.Content>
+              <KPI.Value value={45231} prefix="$" />
+            </KPI.Content>
+            <KPI.Footer>View report</KPI.Footer>
+          </KPI>
+        </div>
+      </div>
+
+      {/* 4. With Chart Bottom */}
       <div className="space-y-3">
         <h3 className="text-base font-semibold text-foreground">With Chart Bottom</h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -291,7 +376,7 @@ export function KpiShowcaseSection() {
               <KPI.Title>Total Revenue</KPI.Title>
             </KPI.Header>
             <KPI.Content>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-end justify-between gap-2">
                 <KPI.Value value={228451} prefix="$" />
                 <KPI.Trend trend="up">+3.3%</KPI.Trend>
               </div>
@@ -304,7 +389,7 @@ export function KpiShowcaseSection() {
               <KPI.Title>Baer Limited (BAL)</KPI.Title>
             </KPI.Header>
             <KPI.Content>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-end justify-between gap-2">
                 <KPI.Value value="49.33" prefix="$" />
                 <KPI.Trend trend="down">-1.9%</KPI.Trend>
               </div>
@@ -321,7 +406,7 @@ export function KpiShowcaseSection() {
             </KPI.Header>
             <KPI.Actions />
             <KPI.Content>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-end justify-between gap-2">
                 <KPI.Value value="98K" />
                 <KPI.Trend trend="neutral">10.9%</KPI.Trend>
               </div>
@@ -331,7 +416,7 @@ export function KpiShowcaseSection() {
         </div>
       </div>
 
-      {/* 3. With Chart Inline */}
+      {/* 5. With Chart Inline */}
       <div className="space-y-3">
         <h3 className="text-base font-semibold text-foreground">With Chart Inline</h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -437,123 +522,50 @@ export function KpiShowcaseSection() {
         </div>
       </div>
 
-      {/* 4. With Progress & Actions & Footer */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3">
-          <h3 className="text-base font-semibold text-foreground">With Progress</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <KPI>
-              <KPI.Header>
-                <KPI.Icon status="success">
-                  <FileText className="h-4 w-4" />
-                </KPI.Icon>
-                <KPI.Title>Server Load</KPI.Title>
-              </KPI.Header>
-              <KPI.Content>
-                <KPI.Value value="38%" />
-                <KPI.Progress value={38} color="success" />
-              </KPI.Content>
-            </KPI>
-            <KPI>
-              <KPI.Header>
-                <KPI.Icon status="danger">
-                  <FileText className="h-4 w-4" />
-                </KPI.Icon>
-                <KPI.Title>Server Load</KPI.Title>
-              </KPI.Header>
-              <KPI.Content>
-                <KPI.Value value="98%" />
-                <KPI.Progress value={98} color="danger" />
-              </KPI.Content>
-            </KPI>
-            <KPI>
-              <KPI.Header>
-                <KPI.Icon status="warning">
-                  <Scan className="h-4 w-4" />
-                </KPI.Icon>
-                <KPI.Title>Average Memory Used</KPI.Title>
-              </KPI.Header>
-              <KPI.Content>
-                <KPI.Value value="64%" />
-                <KPI.Progress value={64} color="warning" />
-              </KPI.Content>
-            </KPI>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-base font-semibold text-foreground">With Actions &amp; Footer</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <KPI>
-              <KPI.Header>
-                <KPI.Icon status="success">
-                  <ShoppingCart className="h-4 w-4" />
-                </KPI.Icon>
-                <KPI.Title>Conversion Rate</KPI.Title>
-              </KPI.Header>
-              <KPI.Actions />
-              <KPI.Content>
-                <div className="flex items-center justify-between gap-2">
-                  <KPI.Value value="3.8%" />
-                  <KPI.Trend trend="up">+1.7%</KPI.Trend>
-                </div>
-              </KPI.Content>
-            </KPI>
-
-            <KPI>
-              <KPI.Header>
-                <KPI.Icon status="danger">
-                  <Tag className="h-4 w-4" />
-                </KPI.Icon>
-                <KPI.Title>Net Profit</KPI.Title>
-              </KPI.Header>
-              <KPI.Actions />
-              <KPI.Content>
-                <div className="flex items-center justify-between gap-2">
-                  <KPI.Value value={10400} prefix="$" />
-                  <KPI.Trend trend="down">-3.3%</KPI.Trend>
-                </div>
-              </KPI.Content>
-            </KPI>
-
-            <KPI>
-              <KPI.Header>
-                <KPI.Icon status="success">
-                  <Users className="h-4 w-4" />
-                </KPI.Icon>
-                <KPI.Title>Total Subscribers</KPI.Title>
-                <div className="ml-auto">
-                  <KPI.Trend trend="up">+122</KPI.Trend>
-                </div>
-              </KPI.Header>
-              <KPI.Content>
-                <KPI.Value value={71897} />
-              </KPI.Content>
-              <KPI.Separator />
-              <KPI.Footer>View all</KPI.Footer>
-            </KPI>
-
-            <KPI>
-              <KPI.Header>
-                <KPI.Icon status="warning">
-                  <DollarSign className="h-4 w-4" />
-                </KPI.Icon>
-                <KPI.Title>Monthly Revenue</KPI.Title>
-                <div className="ml-auto">
-                  <KPI.Trend trend="up">+20.1%</KPI.Trend>
-                </div>
-              </KPI.Header>
-              <KPI.Content>
-                <KPI.Value value={45231} prefix="$" />
-              </KPI.Content>
-              <KPI.Separator />
-              <KPI.Footer>View report</KPI.Footer>
-            </KPI>
-          </div>
+      {/* 6. With Progress */}
+      <div className="space-y-3">
+        <h3 className="text-base font-semibold text-foreground">With Progress</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="success">
+                <FileText className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Server Load</KPI.Title>
+            </KPI.Header>
+            <KPI.Content>
+              <KPI.Value value="38%" />
+              <KPI.Progress value={38} color="success" />
+            </KPI.Content>
+          </KPI>
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="danger">
+                <FileText className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Server Load</KPI.Title>
+            </KPI.Header>
+            <KPI.Content>
+              <KPI.Value value="98%" />
+              <KPI.Progress value={98} color="danger" />
+            </KPI.Content>
+          </KPI>
+          <KPI>
+            <KPI.Header>
+              <KPI.Icon status="warning">
+                <Scan className="h-4 w-4" />
+              </KPI.Icon>
+              <KPI.Title>Average Memory Used</KPI.Title>
+            </KPI.Header>
+            <KPI.Content>
+              <KPI.Value value="64%" />
+              <KPI.Progress value={64} color="warning" />
+            </KPI.Content>
+          </KPI>
         </div>
       </div>
 
-      {/* 5. Monthly Revenue AreaChart */}
+      {/* 7. Monthly Revenue AreaChart */}
       <div className="space-y-3">
         <h3 className="text-base font-semibold text-foreground">AreaChart with Tooltip</h3>
         <MonthlyRevenueChart />

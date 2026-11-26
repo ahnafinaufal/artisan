@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Drawer, Toast } from "@heroui/react";
+import { BankIdePage } from "./features/bank-ide/BankIdePage";
 import {
   AccordionShowcaseSection,
   AlertDialogShowcaseSection,
@@ -138,7 +139,9 @@ export function App() {
         setSelectedLevel("all");
       },
     },
-    ...(activeSection === "overview"
+    ...(activeSection === "bank-ide"
+      ? [{ label: "Bank Ide Konten" }]
+      : activeSection === "overview"
       ? [{ label: "Atomic Overview" }]
       : activeSection === "playground"
         ? [{ label: "Interactive Playground" }]
@@ -407,7 +410,8 @@ export function App() {
             breadcrumbs={breadcrumbs}
           />
 
-          <main className="mx-auto w-full max-w-6xl flex-1 space-y-10 px-4 py-8 sm:px-6">
+          <main className="w-full flex-1 space-y-10 px-4 py-8 sm:px-6">
+            {activeSection === "bank-ide" ? <BankIdePage /> : null}
             {activeSection === "overview" ? <TeamTableCard /> : null}
             {activeSection === "playground" ? <InteractivePlayground /> : null}
             {activeSection === "alert" ? <AlertShowcaseSection /> : null}

@@ -39,3 +39,4 @@ Saat menambahkan atau mengupdate halaman detail komponen:
 ## 5. Batasan & Ruang Lingkup
 - **Komponen Pro (`isPro: true`):** Jangan mengubah implementasi komponen Pro yang sudah ada (`ProOrganisms.tsx`, `ProMolecules.tsx`, `charts/`, `DataGridShowcaseSection`, `EmptyStateShowcaseSection`, `ItemCardShowcaseSection`, `KanbanShowcaseSection`, `KpiShowcaseSection`, `TimelineShowcaseSection`) kecuali diminta secara eksplisit oleh pengguna.
 - **Konservatif & Rapi:** Pertahankan komentar dan struktur Atomic Design yang sudah ada; hindari duplikasi logika antar komponen.
+- **Pagination Tabel:** Setiap tabel data wajib menampilkan maksimal **10 baris per halaman** (`pageSize = 10`).
