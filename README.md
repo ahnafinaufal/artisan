@@ -1,8 +1,6 @@
-<img src="assets/icon.svg" width="64" height="64" alt="">
+# Artisan
 
-# HeroUI v3 Design System
-
-Katalog komponen dan showcase interaktif **HeroUI v3 (`@heroui/react`)** dengan arsitektur **Atomic Design**, React 19, TypeScript, Vite, dan Tailwind CSS v4.
+Artisan, essential social media management.
 
 ## Menjalankan Lokal
 
@@ -22,6 +20,6 @@ npm run build
 
 ## Dokumentasi Proyek
 
-- [AGENTS.md](./AGENTS.md) — Panduan operasional, commands, dan guardrails untuk AI agent & kontributor.
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — Struktur folder, konsep Atomic Design, alur state, dan kontrak komponen.
-- [DESIGN.md](./DESIGN.md) — Token tema HeroUI v3 → Tailwind v4, dark mode, layout showcase, dan aksesibilitas.
+- [AGENTS.md](./AGENTS.md) — Panduan operasional, commands, dan guardrails untuk kontributor.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — Struktur folder, arsitektur komponen, dan alur state.
+- [DESIGN.md](./DESIGN.md) — Token tema Tailwind v4, dark mode, layout, dan aksesibilitas.
