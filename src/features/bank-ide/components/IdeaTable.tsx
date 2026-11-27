@@ -12,25 +12,42 @@ import {
 } from "@heroui/react";
 import {
   Archive,
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  Clapperboard,
   Copy,
   Edit3,
-  ExternalLink,
   Eye,
+  Film,
+  GalleryHorizontalEnd,
+  Image as ImageIcon,
   Inbox,
   MoreVertical,
+  Smartphone,
   Sparkles,
 } from "lucide-react";
 import { COLUMNS_CONFIG } from "../mockData";
-import type { ColumnKey, ContentIdea, IdeaStatus, Priority } from "../types";
+import type {
+  ColumnKey,
+  ContentFormat,
+  ContentIdea,
+  IdeaStatus,
+  Priority,
+} from "../types";
 import {
-  calculateIdeaScore,
   formatDateTime,
   formatShortDate,
   isNearTargetDate,
 } from "../utils";
+import { PlatformLogo } from "./PlatformLogo";
+import { ReferenceLinksCell } from "./ReferenceLinksCell";
 
-export type SortField = "score" | "targetDate" | "createdAt" | "updatedAt";
+export type SortField = ColumnKey;
 export type SortDirection = "asc" | "desc";
+
+/** Key sentinel agar React Aria tidak menandai kolom mana pun sebagai aktif. */
+const NO_SORT_COLUMN = "__no_sort__";
 
 interface IdeaTableProps {
   ideas: ContentIdea[];
@@ -39,9 +56,10 @@ interface IdeaTableProps {
   selectedIds: string[];
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: (pageIds: string[]) => void;
-  sortField: SortField;
+  sortField: ColumnKey | null;
   sortDirection: SortDirection;
-  onSort: (field: SortField) => void;
+  onSort: (field: ColumnKey, direction: SortDirection) => void;
+  onClearSort: () => void;
   page: number;
   pageSize?: number;
   onPageChange: (page: number) => void;
@@ -71,6 +89,23 @@ const PRIORITY_COLOR: Record<Priority, "danger" | "warning" | "default"> = {
   Rendah: "default",
 };
 
+const FORMAT_ICON: Record<ContentFormat, typeof Clapperboard> = {
+  "Reels/Short": Clapperboard,
+  Carousel: GalleryHorizontalEnd,
+  "Single Image": ImageIcon,
+  Story: Smartphone,
+  "Video Panjang": Film,
+};
+
+/** Avatar gambar gradient (contoh Usage/Sizes docs HeroUI). */
+const PIC_IMAGE: Record<string, string> = {
+  Naufal: "https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/blue.jpg",
+  Rania: "https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/purple.jpg",
+  Dimas: "https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/orange.jpg",
+  Sinta: "https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/red.jpg",
+  Bima: "https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/green.jpg",
+};
+
 export function IdeaTable({
   ideas,
   isLoading = false,
@@ -81,6 +116,7 @@ export function IdeaTable({
   sortField,
   sortDirection,
   onSort,
+  onClearSort,
   page,
   pageSize = 10,
   onPageChange,
@@ -108,7 +144,7 @@ export function IdeaTable({
     : new Set<Key>(pageIds.filter((id) => selectedIds.includes(id)));
 
   const sortDescriptor: SortDescriptor = {
-    column: sortField,
+    column: sortField ?? NO_SORT_COLUMN,
     direction: sortDirection === "asc" ? "ascending" : "descending",
   };
 
@@ -136,9 +172,20 @@ export function IdeaTable({
   };
 
   const handleSortChange = (descriptor: SortDescriptor) => {
-    if (descriptor.column) {
-      onSort(String(descriptor.column) as SortField);
+    if (!descriptor.column) return;
+    const field = String(descriptor.column) as ColumnKey;
+    if (!COLUMNS_CONFIG.some((col) => col.key === field)) return;
+
+    // Siklus: asc -> desc -> reset (tanpa sort).
+    if (sortField !== field) {
+      onSort(field, "asc");
+      return;
     }
+    if (sortDirection === "asc") {
+      onSort(field, "desc");
+      return;
+    }
+    onClearSort();
   };
 
   return (
@@ -153,37 +200,42 @@ export function IdeaTable({
             sortDescriptor={sortDescriptor}
             onSortChange={handleSortChange}
           >
-            <Table.Header>
+            <Table.Header className="bg-surface-secondary">
               <Table.Column className="w-10 pr-0">
                 <Checkbox aria-label="Pilih semua baris" slot="selection">
-                  <Checkbox.Control>
-                    <Checkbox.Indicator />
-                  </Checkbox.Control>
+                  <Checkbox.Content>
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                  </Checkbox.Content>
                 </Checkbox>
               </Table.Column>
 
+              <Table.Column className="w-12 pr-0">No.</Table.Column>
+
               {activeColumns.map((col) => {
                 const isSorted = sortField === col.key;
-                const colSortDir = isSorted
-                  ? sortDirection === "asc"
-                    ? "ascending"
-                    : "descending"
-                  : undefined;
 
                 return (
                   <Table.Column
                     key={col.key}
                     id={col.key}
-                    allowsSorting={Boolean(col.sortable)}
+                    allowsSorting
                     isRowHeader={col.key === "title"}
+                    width={col.key === "title" ? 220 : undefined}
                   >
-                    {col.sortable ? (
-                      <Table.SortableColumnHeader sortDirection={colSortDir}>
-                        {col.label}
-                      </Table.SortableColumnHeader>
-                    ) : (
-                      col.label
-                    )}
+                    <span className="flex w-full items-center justify-between gap-1">
+                      <span className="truncate">{col.label}</span>
+                      {isSorted ? (
+                        sortDirection === "asc" ? (
+                          <ArrowUp className="h-3 w-3 shrink-0 text-foreground" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3 shrink-0 text-foreground" />
+                        )
+                      ) : (
+                        <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted" />
+                      )}
+                    </span>
                   </Table.Column>
                 );
               })}
@@ -211,6 +263,12 @@ export function IdeaTable({
                         <Skeleton
                           animationType="shimmer"
                           className="size-4 rounded"
+                        />
+                      </Table.Cell>
+                      <Table.Cell className="pr-0">
+                        <Skeleton
+                          animationType="shimmer"
+                          className="h-3 w-4 rounded"
                         />
                       </Table.Cell>
                       {activeColumns.map((col) => (
@@ -245,8 +303,7 @@ export function IdeaTable({
                       </Table.Cell>
                     </Table.Row>
                   ))
-                : pageIdeas.map((idea) => {
-                const score = calculateIdeaScore(idea);
+                : pageIdeas.map((idea, index) => {
                 const nearTarget = isNearTargetDate(
                   idea.targetDate,
                   idea.status,
@@ -260,10 +317,16 @@ export function IdeaTable({
                         slot="selection"
                         variant="secondary"
                       >
-                        <Checkbox.Control>
-                          <Checkbox.Indicator />
-                        </Checkbox.Control>
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                        </Checkbox.Content>
                       </Checkbox>
+                    </Table.Cell>
+
+                    <Table.Cell className="pr-0 text-xs tabular-nums text-muted">
+                      {startIndex + index + 1}
                     </Table.Cell>
 
                     {activeColumns.map((col) => (
@@ -271,7 +334,6 @@ export function IdeaTable({
                         {renderCustomCell(
                           col.key,
                           idea,
-                          score,
                           nearTarget,
                           onView,
                         )}
@@ -403,7 +465,6 @@ export function IdeaTable({
 function renderCustomCell(
   key: ColumnKey,
   idea: ContentIdea,
-  score: number | null,
   nearTarget: boolean,
   onView: (idea: ContentIdea) => void,
 ) {
@@ -418,9 +479,10 @@ function renderCustomCell(
           {idea.id}
         </button>
       );
-    case "title":
+    case "title": {
+      const secondary = idea.objective ?? "";
       return (
-        <div className="flex max-w-[260px] flex-col">
+        <div className="flex max-w-[220px] flex-col">
           <button
             type="button"
             onClick={() => onView(idea)}
@@ -429,15 +491,18 @@ function renderCustomCell(
           >
             {idea.title}
           </button>
-          {idea.campaign ? (
-            <span className="truncate text-[11px] text-muted">
-              {idea.campaign}
+          {secondary ? (
+            <span className="truncate text-[11px] text-muted" title={secondary}>
+              {secondary}
             </span>
           ) : null}
         </div>
       );
+    }
     case "brand":
-      return <span className="text-xs text-foreground">{idea.brand}</span>;
+      return (
+        <span className="text-xs text-foreground">{idea.brand || "–"}</span>
+      );
     case "pillar":
       return (
         <span className="text-xs text-foreground">{idea.pillar ?? "–"}</span>
@@ -447,30 +512,31 @@ function renderCustomCell(
         <div className="flex flex-wrap gap-1">
           {idea.platforms.map((p) => (
             <Chip key={p} size="sm" variant="soft" color="default">
-              {p}
+              <PlatformLogo platform={p} className="h-3.5 w-3.5" />
+              <Chip.Label>{p}</Chip.Label>
             </Chip>
           ))}
         </div>
       ) : (
         <span className="text-xs text-muted">–</span>
       );
-    case "format":
+    case "format": {
+      if (!idea.format) {
+        return <span className="text-xs text-muted">–</span>;
+      }
+      const FormatIcon = FORMAT_ICON[idea.format] ?? Clapperboard;
       return (
-        <span className="text-xs text-foreground">{idea.format ?? "–"}</span>
+        <Chip size="sm" variant="soft" color="default">
+          <FormatIcon className="h-3 w-3" />
+          <Chip.Label>{idea.format}</Chip.Label>
+        </Chip>
       );
+    }
     case "priority":
       return idea.priority ? (
         <Chip size="sm" variant="soft" color={PRIORITY_COLOR[idea.priority]}>
           {idea.priority}
         </Chip>
-      ) : (
-        <span className="text-xs text-muted">–</span>
-      );
-    case "score":
-      return score !== null ? (
-        <span className="text-xs font-semibold text-foreground">
-          {score.toFixed(1)}
-        </span>
       ) : (
         <span className="text-xs text-muted">–</span>
       );
@@ -488,7 +554,10 @@ function renderCustomCell(
       return idea.pic ? (
         <div className="flex items-center gap-2">
           <Avatar size="sm" className="h-6 w-6 text-[10px]">
-            <Avatar.Fallback>{idea.pic.slice(0, 2).toUpperCase()}</Avatar.Fallback>
+            <Avatar.Image alt={idea.pic} src={PIC_IMAGE[idea.pic]} />
+            <Avatar.Fallback>
+              {idea.pic.slice(0, 2).toUpperCase()}
+            </Avatar.Fallback>
           </Avatar>
           <span className="text-xs text-foreground">{idea.pic}</span>
         </div>
@@ -501,32 +570,12 @@ function renderCustomCell(
           {idea.status}
         </Chip>
       );
-    case "objective":
-      return (
-        <span className="text-xs text-foreground">{idea.objective ?? "–"}</span>
-      );
     case "campaign":
       return (
         <span className="text-xs text-foreground">{idea.campaign ?? "–"}</span>
       );
-    case "source":
-      return (
-        <span className="text-xs text-foreground">{idea.source ?? "–"}</span>
-      );
     case "references":
-      return (idea.referenceLinks?.length ?? 0) > 0 ? (
-        <a
-          href={idea.referenceLinks![0]}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-accent hover:underline"
-        >
-          {idea.referenceLinks!.length} link
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      ) : (
-        <span className="text-xs text-muted">–</span>
-      );
+      return <ReferenceLinksCell links={idea.referenceLinks ?? []} />;
     case "createdBy":
       return <span className="text-xs text-foreground">{idea.createdBy}</span>;
     case "createdAt":

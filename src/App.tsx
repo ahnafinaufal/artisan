@@ -410,7 +410,7 @@ export function App() {
             breadcrumbs={breadcrumbs}
           />
 
-          <main className="w-full flex-1 space-y-10 px-4 py-8 sm:px-6">
+          <main className="w-full flex-1 space-y-10 bg-background px-4 py-8 sm:px-6">
             {activeSection === "bank-ide" ? <BankIdePage /> : null}
             {activeSection === "overview" ? <TeamTableCard /> : null}
             {activeSection === "playground" ? <InteractivePlayground /> : null}

@@ -115,7 +115,7 @@ export function IdeaToolbar({
             className={`h-9 rounded-full border px-3 text-xs font-medium shadow-sm transition-colors ${
               activeFilterCount > 0
                 ? "border-accent/50 bg-accent text-accent-foreground hover:bg-accent/90"
-                : "border-border bg-surface-secondary text-foreground hover:bg-surface-tertiary"
+                : "border-border bg-surface text-foreground hover:bg-surface-hover"
             }`}
           >
             <Filter
@@ -136,7 +136,7 @@ export function IdeaToolbar({
             <Button
               size="sm"
               variant="ghost"
-              className="h-9 rounded-full border border-border bg-surface-secondary px-3 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-surface-tertiary"
+              className="h-9 rounded-full border border-border bg-surface px-3 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-surface-hover"
             >
               <Columns3 className="h-3.5 w-3.5 text-muted" />
               Kolom

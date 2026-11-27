@@ -1,9 +1,92 @@
-import type { ContentIdea, IdeaFilters, IdeaStatus, UserRole } from "./types";
+import type {
+  ColumnKey,
+  ContentIdea,
+  IdeaFilters,
+  IdeaStatus,
+  UserRole,
+} from "./types";
 
 export function calculateIdeaScore(idea: Pick<ContentIdea, "relevanceScore" | "impactScore" | "easeScore">): number | null {
   const { relevanceScore, impactScore, easeScore } = idea;
   if (!relevanceScore || !impactScore || !easeScore) return null;
   return Math.round(((relevanceScore + impactScore + easeScore) / 3) * 10) / 10;
+}
+
+const sortCollator = new Intl.Collator("id-ID", {
+  sensitivity: "base",
+  numeric: true,
+});
+
+/** Nilai yang dipakai untuk sorting tiap kolom tabel Bank Ide. */
+export function getIdeaSortValue(
+  idea: ContentIdea,
+  field: ColumnKey,
+): string | number | null {
+  switch (field) {
+    case "references":
+      return idea.referenceLinks?.length ?? 0;
+    case "platforms":
+      return idea.platforms.join(", ");
+    case "targetDate":
+      return idea.targetDate ?? "";
+    case "createdAt":
+      return idea.createdAt;
+    case "updatedAt":
+      return idea.updatedAt;
+    case "id":
+      return idea.id;
+    case "title":
+      return idea.title;
+    case "brand":
+      return idea.brand;
+    case "pillar":
+      return idea.pillar ?? "";
+    case "format":
+      return idea.format ?? "";
+    case "priority":
+      return idea.priority ?? "";
+    case "pic":
+      return idea.pic ?? "";
+    case "status":
+      return idea.status;
+    case "campaign":
+      return idea.campaign ?? "";
+    case "createdBy":
+      return idea.createdBy;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Comparator generik untuk semua kolom.
+ * Teks memakai localeCompare (A-Z / Z-A), angka dibandingkan numerik,
+ * dan nilai kosong selalu diletakkan di akhir.
+ */
+export function compareIdeas(
+  a: ContentIdea,
+  b: ContentIdea,
+  field: ColumnKey,
+  direction: "asc" | "desc",
+): number {
+  const aValue = getIdeaSortValue(a, field);
+  const bValue = getIdeaSortValue(b, field);
+
+  const aEmpty = aValue === null || aValue === undefined || aValue === "";
+  const bEmpty = bValue === null || bValue === undefined || bValue === "";
+
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return 1;
+  if (bEmpty) return -1;
+
+  let cmp: number;
+  if (typeof aValue === "number" && typeof bValue === "number") {
+    cmp = aValue - bValue;
+  } else {
+    cmp = sortCollator.compare(String(aValue), String(bValue));
+  }
+
+  return direction === "asc" ? cmp : -cmp;
 }
 
 export function isNearTargetDate(targetDate?: string, status?: IdeaStatus): boolean {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Chip, ListBox, Select, toast } from "@heroui/react";
+import { Chip, toast } from "@heroui/react";
 import { COLUMNS_CONFIG, INITIAL_IDEAS } from "./mockData";
 import type {
   ColumnKey,
@@ -11,7 +11,7 @@ import type {
   UserRole,
 } from "./types";
 import {
-  calculateIdeaScore,
+  compareIdeas,
   isNearTargetDate,
   matchesPeriod,
 } from "./utils";
@@ -20,7 +20,6 @@ import { IdeaToolbar } from "./components/IdeaToolbar";
 import {
   IdeaTable,
   type SortDirection,
-  type SortField,
 } from "./components/IdeaTable";
 import { IdeaDetailDrawer } from "./components/IdeaDetailDrawer";
 import { QuickAddModal } from "./components/QuickAddModal";
@@ -45,7 +44,7 @@ const DEFAULT_COLUMNS: ColumnKey[] = COLUMNS_CONFIG.map((c) => c.key);
 export function BankIdePage() {
   const [ideas, setIdeas] = useState<ContentIdea[]>(INITIAL_IDEAS);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentRole, setCurrentRole] = useState<UserRole>("Planner");
+  const currentRole: UserRole = "Planner";
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsLoading(false), 600);
@@ -56,7 +55,7 @@ export function BankIdePage() {
   const [visibleColumns, setVisibleColumns] =
     useState<ColumnKey[]>(DEFAULT_COLUMNS);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortField, setSortField] = useState<ColumnKey | null>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [page, setPage] = useState(1);
 
@@ -111,19 +110,10 @@ export function BankIdePage() {
       return true;
     });
 
-    return [...list].sort((a, b) => {
-      let cmp = 0;
-      if (sortField === "score") {
-        cmp = (calculateIdeaScore(a) ?? -1) - (calculateIdeaScore(b) ?? -1);
-      } else if (sortField === "targetDate") {
-        cmp = (a.targetDate ?? "").localeCompare(b.targetDate ?? "");
-      } else if (sortField === "updatedAt") {
-        cmp = a.updatedAt.localeCompare(b.updatedAt);
-      } else {
-        cmp = a.createdAt.localeCompare(b.createdAt);
-      }
-      return sortDirection === "asc" ? cmp : -cmp;
-    });
+    if (!sortField) return list;
+    return [...list].sort((a, b) =>
+      compareIdeas(a, b, sortField, sortDirection),
+    );
   }, [scopedForSummary, filters, sortField, sortDirection]);
 
   const handleSelectSummaryCard = (key: SummaryCardKey) => {
@@ -350,34 +340,6 @@ export function BankIdePage() {
             Tangkap, lengkapi, nilai, dan pilih ide konten sebelum masuk tahap produksi.
           </p>
         </div>
-
-        {/* Simulasi Role */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted">Role aktif:</span>
-          <Select
-            aria-label="Role aktif"
-            selectedKey={currentRole}
-            onSelectionChange={(k) => setCurrentRole(String(k) as UserRole)}
-          >
-            <Select.Trigger className="h-8 w-32 text-xs">
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover>
-              <ListBox>
-                <ListBox.Item id="Pengusul" textValue="Pengusul">
-                  Pengusul
-                </ListBox.Item>
-                <ListBox.Item id="Planner" textValue="Planner">
-                  Planner
-                </ListBox.Item>
-                <ListBox.Item id="Approver" textValue="Approver">
-                  Approver
-                </ListBox.Item>
-              </ListBox>
-            </Select.Popover>
-          </Select>
-        </div>
       </div>
 
       {/* 6 Summary Cards */}
@@ -477,13 +439,14 @@ export function BankIdePage() {
         }}
         sortField={sortField}
         sortDirection={sortDirection}
-        onSort={(field) => {
-          if (sortField === field) {
-            setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
-          } else {
-            setSortField(field);
-            setSortDirection("desc");
-          }
+        onSort={(field, direction) => {
+          setSortField(field);
+          setSortDirection(direction);
+          setPage(1);
+        }}
+        onClearSort={() => {
+          setSortField(null);
+          setPage(1);
         }}
         page={page}
         pageSize={10}
