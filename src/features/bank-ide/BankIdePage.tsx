@@ -22,7 +22,7 @@ import {
   type SortDirection,
 } from "./components/IdeaTable";
 import { IdeaDetailDrawer } from "./components/IdeaDetailDrawer";
-import { QuickAddModal } from "./components/QuickAddModal";
+import { CreateIdeaPage } from "./CreateIdeaPage";
 
 const DEFAULT_FILTERS: IdeaFilters = {
   search: "",
@@ -45,6 +45,7 @@ export function BankIdePage() {
   const [ideas, setIdeas] = useState<ContentIdea[]>(INITIAL_IDEAS);
   const [isLoading, setIsLoading] = useState(true);
   const currentRole: UserRole = "Planner";
+  const [view, setView] = useState<"table" | "kanban">("table");
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsLoading(false), 600);
@@ -61,7 +62,7 @@ export function BankIdePage() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(null);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [pageMode, setPageMode] = useState<"list" | "create">("list");
 
   // Summary cards follow brand, platform, and period filters, NOT status
   const scopedForSummary = useMemo(() => {
@@ -139,29 +140,6 @@ export function BankIdePage() {
     } else if (key === "near_target") {
       setFilters((p) => ({ ...p, status: "all", nearTargetOnly: true }));
     }
-  };
-
-  const handleQuickAddSave = (title: string, brand: string) => {
-    const now = new Date().toISOString();
-    const nextNum = ideas.length + 1;
-    const id = `IDE-${String(nextNum).padStart(4, "0")}`;
-    const newIdea: ContentIdea = {
-      id,
-      title,
-      brand,
-      platforms: [],
-      tags: [],
-      referenceLinks: [],
-      status: "Draft",
-      isArchived: false,
-      createdBy: "Naufal",
-      createdAt: now,
-      updatedAt: now,
-      comments: [],
-      history: [{ id: `h-${Date.now()}`, actor: "Naufal", action: "Tambah cepat (Draft)", timestamp: now }],
-    };
-    setIdeas((prev) => [newIdea, ...prev]);
-    toast.success(`Ide ${id} disimpan sebagai Draft`);
   };
 
   const handleSaveDrawer = (
@@ -300,28 +278,26 @@ export function BankIdePage() {
     toast.info(`Ide ${idea.id} diarsipkan`);
   };
 
-  const handleExportCsv = () => {
-    const header = ["ID", "Judul", "Brand", "Pillar", "Platform", "Format", "Prioritas", "Status"];
-    const rows = filteredIdeas.map((i) => [
-      i.id,
-      `"${i.title.replace(/"/g, '""')}"`,
-      i.brand,
-      i.pillar ?? "",
-      `"${i.platforms.join(", ")}"`,
-      i.format ?? "",
-      i.priority ?? "",
-      i.status,
-    ]);
-    const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "bank-ide-konten.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Data berhasil diexport ke CSV");
-  };
+  if (pageMode === "create") {
+    return (
+      <CreateIdeaPage
+        existingIdeas={ideas}
+        currentRole={currentRole}
+        onBack={() => setPageMode("list")}
+        onSave={(draft, targetStatus) => {
+          const result = handleSaveDrawer(draft, targetStatus);
+          if (result.ok) {
+            setFilters(DEFAULT_FILTERS);
+            setActiveCard(null);
+            setSortField("createdAt");
+            setSortDirection("desc");
+            setPage(1);
+          }
+          return result;
+        }}
+      />
+    );
+  }
 
   return (
     <section className="space-y-6">
@@ -408,16 +384,15 @@ export function BankIdePage() {
         }}
         onOpenNewIdea={() => {
           setEditingIdea(null);
-          setDrawerOpen(true);
+          setDrawerOpen(false);
+          setPageMode("create");
         }}
-        onOpenQuickAdd={() => setQuickAddOpen(true)}
-        onExportCsv={handleExportCsv}
-        onImportCsv={() =>
-          toast.info("Import CSV siap dihubungkan ke parser file.")
-        }
+        view={view}
+        onChangeView={setView}
       />
 
-      {/* Main Table */}
+      {/* Main Table / Kanban */}
+      {view === "table" ? (
       <IdeaTable
         ideas={filteredIdeas}
         isLoading={isLoading}
@@ -463,7 +438,11 @@ export function BankIdePage() {
         onConvert={handleConvert}
         onArchive={handleArchive}
       />
-
+      ) : (
+        <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-surface text-sm text-muted">
+          Tampilan Kanban (segera hadir)
+        </div>
+      )}
       {/* Side Drawer Form */}
       <IdeaDetailDrawer
         isOpen={drawerOpen}
@@ -516,13 +495,6 @@ export function BankIdePage() {
         onConvert={handleConvert}
       />
 
-      {/* Quick Add Modal */}
-      <QuickAddModal
-        isOpen={quickAddOpen}
-        onOpenChange={setQuickAddOpen}
-        existingIdeas={ideas}
-        onSave={handleQuickAddSave}
-      />
     </section>
   );
 }

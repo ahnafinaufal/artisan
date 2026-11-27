@@ -7,17 +7,17 @@ import {
   ListBox,
   Popover,
   Select,
+  Tooltip,
 } from "@heroui/react";
 import {
   Archive,
   Columns3,
-  Download,
   Filter,
+  Kanban,
   Plus,
   RotateCcw,
   Search,
-  Upload,
-  Zap,
+  Table as TableIcon,
 } from "lucide-react";
 import { BRANDS, CAMPAIGNS, COLUMNS_CONFIG, PICS } from "../mockData";
 import type {
@@ -40,9 +40,8 @@ interface IdeaToolbarProps {
   onBulkPriority: (priority: Priority) => void;
   onBulkArchive: () => void;
   onOpenNewIdea: () => void;
-  onOpenQuickAdd: () => void;
-  onExportCsv: () => void;
-  onImportCsv: () => void;
+  view: "table" | "kanban";
+  onChangeView: (view: "table" | "kanban") => void;
 }
 
 const STATUSES: IdeaStatus[] = [
@@ -72,9 +71,8 @@ export function IdeaToolbar({
   onBulkPriority,
   onBulkArchive,
   onOpenNewIdea,
-  onOpenQuickAdd,
-  onExportCsv,
-  onImportCsv,
+  view,
+  onChangeView,
 }: IdeaToolbarProps) {
   const [showFilters, setShowFilters] = useState(false);
 
@@ -180,18 +178,39 @@ export function IdeaToolbar({
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onPress={onImportCsv}>
-            <Upload className="h-3.5 w-3.5" />
-            Import CSV
-          </Button>
-          <Button variant="ghost" size="sm" onPress={onExportCsv}>
-            <Download className="h-3.5 w-3.5" />
-            Export
-          </Button>
-          <Button variant="secondary" size="sm" onPress={onOpenQuickAdd}>
-            <Zap className="h-3.5 w-3.5" />
-            Tambah Cepat
-          </Button>
+          {/* Toggle View: Tabel (default) / Kanban */}
+          <div className="flex items-center rounded-full border border-border bg-surface p-0.5 shadow-sm">
+            <Tooltip delay={0}>
+              <Tooltip.Trigger>
+                <Button
+                  size="sm"
+                  isIconOnly
+                  aria-label="Tampilan tabel"
+                  variant={view === "table" ? "primary" : "ghost"}
+                  className="h-8 w-8 rounded-full"
+                  onPress={() => onChangeView("table")}
+                >
+                  <TableIcon className="h-3.5 w-3.5" />
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Tampilan tabel</Tooltip.Content>
+            </Tooltip>
+            <Tooltip delay={0}>
+              <Tooltip.Trigger>
+                <Button
+                  size="sm"
+                  isIconOnly
+                  aria-label="Tampilan kanban"
+                  variant={view === "kanban" ? "primary" : "ghost"}
+                  className="h-8 w-8 rounded-full"
+                  onPress={() => onChangeView("kanban")}
+                >
+                  <Kanban className="h-3.5 w-3.5" />
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>Tampilan kanban</Tooltip.Content>
+            </Tooltip>
+          </div>
           <Button variant="primary" size="sm" onPress={onOpenNewIdea}>
             <Plus className="h-3.5 w-3.5" />
             Tambah Ide

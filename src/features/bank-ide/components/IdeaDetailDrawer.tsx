@@ -11,6 +11,14 @@ import {
 } from "@heroui/react";
 import { AlertTriangle, MessageSquare, Send, Sparkles } from "lucide-react";
 import { BRANDS, CAMPAIGNS, PICS } from "../mockData";
+import {
+  FORMATS,
+  OBJECTIVES,
+  PILLARS,
+  PLATFORMS,
+  PRIORITIES,
+  SOURCES,
+} from "../options";
 import type {
   ContentFormat,
   ContentIdea,
@@ -45,30 +53,6 @@ interface IdeaDetailDrawerProps {
   onAddComment: (ideaId: string, text: string) => void;
   onConvert: (idea: ContentIdea) => void;
 }
-
-const PILLARS: ContentPillar[] = ["Edukasi", "Hiburan", "Promosi", "Interaksi"];
-const PLATFORMS: Platform[] = ["Instagram", "TikTok", "YouTube"];
-const FORMATS: ContentFormat[] = [
-  "Reels/Short",
-  "Carousel",
-  "Single Image",
-  "Story",
-  "Video Panjang",
-];
-const OBJECTIVES: Objective[] = [
-  "Awareness",
-  "Engagement",
-  "Traffic",
-  "Konversi",
-];
-const PRIORITIES: Priority[] = ["Tinggi", "Sedang", "Rendah"];
-const SOURCES: IdeaSource[] = [
-  "Tim",
-  "Klien",
-  "Tren",
-  "Kompetitor",
-  "Komentar audiens",
-];
 
 export function IdeaDetailDrawer({
   isOpen,
