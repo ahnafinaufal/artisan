@@ -96,12 +96,102 @@ import type { AtomicLevel, ComponentCategory } from "./data/componentsCatalog";
 
 export function App() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeSection, setActiveSection] = useState<ActiveSection>("catalog");
+  const [activeSection, setActiveSection] = useState<ActiveSection>(() => {
+    if (typeof window !== "undefined") {
+      if (window.location.pathname.startsWith("/bank-ide")) {
+        return "bank-ide";
+      }
+    }
+    return "catalog";
+  });
+  const [isCreateIdeaRoute, setIsCreateIdeaRoute] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.location.pathname === "/bank-ide/create";
+    }
+    return false;
+  });
+  const [isEditIdeaRoute, setIsEditIdeaRoute] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.location.pathname.startsWith("/bank-ide/edit");
+    }
+    return false;
+  });
+  const [isViewIdeaRoute, setIsViewIdeaRoute] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.location.pathname.startsWith("/bank-ide/view");
+    }
+    return false;
+  });
   const [selectedComponentName, setSelectedComponentName] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<"all" | AtomicLevel>("all");
   const [selectedCategory, setSelectedCategory] = useState<"all" | ComponentCategory>("all");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === "/bank-ide/create") {
+        setActiveSection("bank-ide");
+        setIsCreateIdeaRoute(true);
+        setIsEditIdeaRoute(false);
+      } else if (path.startsWith("/bank-ide/edit")) {
+        setActiveSection("bank-ide");
+        setIsCreateIdeaRoute(false);
+        setIsEditIdeaRoute(true);
+        setIsViewIdeaRoute(false);
+      } else if (path.startsWith("/bank-ide/view")) {
+        setActiveSection("bank-ide");
+        setIsCreateIdeaRoute(false);
+        setIsEditIdeaRoute(false);
+        setIsViewIdeaRoute(true);
+      } else if (path === "/bank-ide") {
+        setActiveSection("bank-ide");
+        setIsCreateIdeaRoute(false);
+        setIsEditIdeaRoute(false);
+      } else {
+        setIsCreateIdeaRoute(false);
+        setIsEditIdeaRoute(false);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const handleSelectSection = (section: ActiveSection) => {
+    setActiveSection(section);
+    if (section === "bank-ide") {
+      setIsCreateIdeaRoute(false);
+      if (window.location.pathname !== "/bank-ide") {
+        window.history.pushState(null, "", "/bank-ide");
+      }
+    } else {
+      setIsCreateIdeaRoute(false);
+      if (window.location.pathname.startsWith("/bank-ide")) {
+        window.history.pushState(null, "", "/");
+      }
+    }
+  };
+
+  const handleBankIdeModeChange = (mode: "list" | "create" | "edit" | "view", id?: string) => {
+    const nextIsCreate = mode === "create";
+    const nextIsEdit = mode === "edit";
+    const nextIsView = mode === "view";
+    setIsCreateIdeaRoute(nextIsCreate);
+    setIsEditIdeaRoute(nextIsEdit);
+    setIsViewIdeaRoute(nextIsView);
+    const targetPath =
+      nextIsCreate
+        ? "/bank-ide/create"
+        : nextIsEdit
+          ? `/bank-ide/edit/${encodeURIComponent(id ?? "")}`
+          : nextIsView
+            ? `/bank-ide/view/${encodeURIComponent(id ?? "")}`
+            : "/bank-ide";
+    if (window.location.pathname !== targetPath && !((nextIsEdit || nextIsView) && !id)) {
+      window.history.pushState(null, "", targetPath);
+    }
+  };
 
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -140,7 +230,31 @@ export function App() {
       },
     },
     ...(activeSection === "bank-ide"
-      ? [{ label: "Bank Ide Konten" }]
+      ? isViewIdeaRoute
+        ? [
+            {
+              label: "Bank Ide Konten",
+              onPress: () => handleBankIdeModeChange("list"),
+            },
+            { label: "Detail Konten" },
+          ]
+        : isEditIdeaRoute
+        ? [
+            {
+              label: "Bank Ide Konten",
+              onPress: () => handleBankIdeModeChange("list"),
+            },
+            { label: "Edit Konten" },
+          ]
+        : isCreateIdeaRoute
+        ? [
+            {
+              label: "Bank Ide Konten",
+              onPress: () => handleBankIdeModeChange("list"),
+            },
+            { label: "Form Create" },
+          ]
+        : [{ label: "Bank Ide Konten" }]
       : activeSection === "overview"
       ? [{ label: "Atomic Overview" }]
       : activeSection === "playground"
@@ -365,7 +479,7 @@ export function App() {
         >
           <Sidebar
             activeSection={activeSection}
-            onSelectSection={setActiveSection}
+            onSelectSection={handleSelectSection}
             selectedComponentName={selectedComponentName}
             onSelectComponent={setSelectedComponentName}
             selectedLevel={selectedLevel}
@@ -383,7 +497,7 @@ export function App() {
               <Drawer.Dialog aria-label="Navigasi Sidebar" className="h-full p-0">
                 <Sidebar
                   activeSection={activeSection}
-                  onSelectSection={setActiveSection}
+                  onSelectSection={handleSelectSection}
                   selectedComponentName={selectedComponentName}
                   onSelectComponent={setSelectedComponentName}
                   selectedLevel={selectedLevel}
@@ -411,7 +525,12 @@ export function App() {
           />
 
           <main className="w-full flex-1 space-y-10 bg-background px-4 py-8 sm:px-6">
-            {activeSection === "bank-ide" ? <BankIdePage /> : null}
+            {activeSection === "bank-ide" ? (
+              <BankIdePage
+                mode={isViewIdeaRoute ? "view" : isEditIdeaRoute ? "edit" : isCreateIdeaRoute ? "create" : "list"}
+                onModeChange={handleBankIdeModeChange}
+              />
+            ) : null}
             {activeSection === "overview" ? <TeamTableCard /> : null}
             {activeSection === "playground" ? <InteractivePlayground /> : null}
             {activeSection === "alert" ? <AlertShowcaseSection /> : null}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Button,
   Checkbox,
+  Chip,
   Dropdown,
   Input,
   ListBox,
@@ -10,7 +11,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import {
-  Archive,
+  Trash2,
   Columns3,
   Filter,
   Kanban,
@@ -29,6 +30,7 @@ import type {
 } from "../types";
 
 interface IdeaToolbarProps {
+  totalCount: number;
   filters: IdeaFilters;
   onChangeFilters: (next: Partial<IdeaFilters>) => void;
   onResetFilters: () => void;
@@ -38,7 +40,7 @@ interface IdeaToolbarProps {
   onBulkStatus: (status: IdeaStatus) => void;
   onBulkPic: (pic: string) => void;
   onBulkPriority: (priority: Priority) => void;
-  onBulkArchive: () => void;
+  onBulkDelete: () => void;
   onOpenNewIdea: () => void;
   view: "table" | "kanban";
   onChangeView: (view: "table" | "kanban") => void;
@@ -54,12 +56,18 @@ const STATUSES: IdeaStatus[] = [
   "Jadi Konten",
 ];
 
-const PLATFORMS = ["Instagram", "TikTok", "YouTube"];
-const FORMATS = ["Reels/Short", "Carousel", "Single Image", "Story", "Video Panjang"];
+const FORMATS = [
+  "Reels/Short",
+  "Carousel",
+  "Single Image",
+  "Story",
+  "Video Panjang",
+];
 const PILLARS = ["Edukasi", "Hiburan", "Promosi", "Interaksi"];
 const PRIORITIES: Priority[] = ["Tinggi", "Sedang", "Rendah"];
 
 export function IdeaToolbar({
+  totalCount,
   filters,
   onChangeFilters,
   onResetFilters,
@@ -69,7 +77,7 @@ export function IdeaToolbar({
   onBulkStatus,
   onBulkPic,
   onBulkPriority,
-  onBulkArchive,
+  onBulkDelete,
   onOpenNewIdea,
   view,
   onChangeView,
@@ -89,149 +97,152 @@ export function IdeaToolbar({
       filters.period,
     ].filter((v) => v && v !== "all").length + (filters.nearTargetOnly ? 1 : 0);
 
+  const hasAnyFilter = activeFilterCount > 0 || Boolean(filters.search.trim());
+
   return (
     <div className="space-y-3">
-      {/* Baris 1: Search + Primary Actions */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative w-full sm:w-64 sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <Input
-              fullWidth
-              className="pl-9"
-              placeholder="Cari ID, judul, hook, atau tag..."
-              value={filters.search}
-              onChange={(e) => onChangeFilters({ search: e.target.value })}
-            />
-          </div>
-
-          {/* Pill: Filter — neutral seperti Kolom, biru saat ada filter aktif */}
-          <Button
-            size="sm"
-            variant="ghost"
-            onPress={() => setShowFilters((p) => !p)}
-            className={`h-9 rounded-full border px-3 text-xs font-medium shadow-sm transition-colors ${
-              activeFilterCount > 0
-                ? "border-accent/50 bg-accent text-accent-foreground hover:bg-accent/90"
-                : "border-border bg-surface text-foreground hover:bg-surface-hover"
-            }`}
-          >
-            <Filter
-              className={`h-3.5 w-3.5 ${
-                activeFilterCount > 0 ? "" : "text-muted"
-              }`}
-            />
-            Filter
-            {activeFilterCount > 0 && (
-              <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent-foreground/20 px-1 text-[10px] font-bold text-accent-foreground">
-                {activeFilterCount}
-              </span>
-            )}
-          </Button>
-
-          {/* Pill: Kolom */}
-          <Popover>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-9 rounded-full border border-border bg-surface px-3 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-surface-hover"
-            >
-              <Columns3 className="h-3.5 w-3.5 text-muted" />
-              Kolom
-              <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-default px-1 text-[10px] font-bold text-default-foreground">
-                {visibleColumns.length}
-              </span>
-            </Button>
-            <Popover.Content className="w-80 p-3.5">
-              <div className="mb-2.5 flex items-center justify-between">
-                <p className="text-xs font-semibold text-foreground">
-                  Tampilkan Kolom
-                </p>
-                <span className="text-[11px] text-muted">
-                  {visibleColumns.length}/{COLUMNS_CONFIG.length} aktif
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                {COLUMNS_CONFIG.map((col) => {
-                  const checked = visibleColumns.includes(col.key);
-                  return (
-                    <Checkbox
-                      key={col.key}
-                      isSelected={checked}
-                      onChange={() => onToggleColumn(col.key)}
-                      className="flex items-center gap-2 text-xs"
-                    >
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
-                      <Checkbox.Content>
-                        <span className="truncate text-xs text-foreground">
-                          {col.label}
-                        </span>
-                      </Checkbox.Content>
-                    </Checkbox>
-                  );
-                })}
-              </div>
-            </Popover.Content>
-          </Popover>
+      {/* Baris 1: Judul Daftar + Count Badge (kiri) & Tambah Ide (kanan) */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-lg font-bold tracking-tight text-foreground">
+            Daftar Ide
+          </h2>
+          <Chip size="sm" variant="soft" color="default">
+            {totalCount}
+          </Chip>
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {/* Toggle View: Tabel (default) / Kanban */}
-          <div className="flex items-center rounded-full border border-border bg-surface p-0.5 shadow-sm">
-            <Tooltip delay={0}>
-              <Tooltip.Trigger>
-                <Button
-                  size="sm"
-                  isIconOnly
-                  aria-label="Tampilan tabel"
-                  variant={view === "table" ? "primary" : "ghost"}
-                  className="h-8 w-8 rounded-full"
-                  onPress={() => onChangeView("table")}
-                >
-                  <TableIcon className="h-3.5 w-3.5" />
-                </Button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>Tampilan tabel</Tooltip.Content>
-            </Tooltip>
-            <Tooltip delay={0}>
-              <Tooltip.Trigger>
-                <Button
-                  size="sm"
-                  isIconOnly
-                  aria-label="Tampilan kanban"
-                  variant={view === "kanban" ? "primary" : "ghost"}
-                  className="h-8 w-8 rounded-full"
-                  onPress={() => onChangeView("kanban")}
-                >
-                  <Kanban className="h-3.5 w-3.5" />
-                </Button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>Tampilan kanban</Tooltip.Content>
-            </Tooltip>
-          </div>
-          <Button variant="primary" size="sm" onPress={onOpenNewIdea}>
-            <Plus className="h-3.5 w-3.5" />
-            Tambah Ide
+        <Button
+          variant="primary"
+          size="sm"
+          className="rounded-full px-4"
+          onPress={onOpenNewIdea}
+        >
+          Tambah Ide
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Baris 2: Search + Pill Filter Controls sejajar horizontal */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-64 sm:max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Input
+            fullWidth
+            className="pl-9"
+            placeholder="Cari ID, judul, hook, atau tag..."
+            value={filters.search}
+            onChange={(e) => onChangeFilters({ search: e.target.value })}
+          />
+        </div>
+
+        {/* Pill: Columns */}
+        <Popover>
+          <Button variant="secondary" size="sm" className="rounded-full">
+            <Columns3 className="h-3.5 w-3.5" />
+            Columns
           </Button>
+          <Popover.Content className="w-80 p-3.5">
+            <div className="mb-2.5 flex items-center justify-between">
+              <p className="text-xs font-semibold text-foreground">
+                Tampilkan Kolom
+              </p>
+              <span className="text-[11px] text-muted">
+                {visibleColumns.length}/{COLUMNS_CONFIG.length} aktif
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+              {COLUMNS_CONFIG.map((col) => {
+                const checked = visibleColumns.includes(col.key);
+                return (
+                  <Checkbox
+                    key={col.key}
+                    isSelected={checked}
+                    onChange={() => onToggleColumn(col.key)}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <Checkbox.Control>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <Checkbox.Content>
+                      <span className="truncate text-xs text-foreground">
+                        {col.label}
+                      </span>
+                    </Checkbox.Content>
+                  </Checkbox>
+                );
+              })}
+            </div>
+          </Popover.Content>
+        </Popover>
+
+        {/* Pill: Filter Lanjutan */}
+        <Button
+          variant="secondary"
+          size="sm"
+          className={`rounded-full ${
+            showFilters || activeFilterCount > 0
+              ? "ring-1 ring-accent/50 text-accent"
+              : ""
+          }`}
+          onPress={() => setShowFilters((p) => !p)}
+        >
+          <Filter className="h-3.5 w-3.5" />
+          Filter
+          {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+        </Button>
+
+        {hasAnyFilter ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-muted hover:text-foreground"
+            onPress={onResetFilters}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset
+          </Button>
+        ) : null}
+
+        {/* Toggle view: Tabel / Kanban — paling kanan, sejajar di bawah tombol Tambah Ide */}
+        <div className="ml-auto flex items-center rounded-full border border-border bg-surface p-0.5">
+          <Tooltip delay={0}>
+            <Button
+              isIconOnly
+              size="sm"
+              variant={view === "table" ? "secondary" : "ghost"}
+              className="h-7 w-7 rounded-full"
+              aria-label="Tampilan Tabel"
+              onPress={() => onChangeView("table")}
+            >
+              <TableIcon className="h-3.5 w-3.5" />
+            </Button>
+            <Tooltip.Content>Tampilan Tabel</Tooltip.Content>
+          </Tooltip>
+          <Tooltip delay={0}>
+            <Button
+              isIconOnly
+              size="sm"
+              variant={view === "kanban" ? "secondary" : "ghost"}
+              className="h-7 w-7 rounded-full"
+              aria-label="Tampilan Kanban"
+              onPress={() => onChangeView("kanban")}
+            >
+              <Kanban className="h-3.5 w-3.5" />
+            </Button>
+            <Tooltip.Content>Tampilan Kanban</Tooltip.Content>
+          </Tooltip>
         </div>
       </div>
 
-      {/* Baris 2: Collapsible Filter Grid */}
+      {/* Baris 3: Collapsible Filter Grid Lanjutan */}
       {showFilters ? (
-        <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface/60 p-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface p-4 sm:grid-cols-3 lg:grid-cols-5">
           <FilterSelect
             label="Brand"
             value={filters.brand}
             options={BRANDS}
             onChange={(v) => onChangeFilters({ brand: v })}
-          />
-          <FilterSelect
-            label="Platform"
-            value={filters.platform}
-            options={PLATFORMS}
-            onChange={(v) => onChangeFilters({ platform: v })}
           />
           <FilterSelect
             label="Format"
@@ -244,12 +255,6 @@ export function IdeaToolbar({
             value={filters.pillar}
             options={PILLARS}
             onChange={(v) => onChangeFilters({ pillar: v })}
-          />
-          <FilterSelect
-            label="Status"
-            value={filters.status}
-            options={STATUSES}
-            onChange={(v) => onChangeFilters({ status: v })}
           />
           <FilterSelect
             label="Prioritas"
@@ -274,6 +279,7 @@ export function IdeaToolbar({
               Periode
             </span>
             <Select
+              variant="secondary"
               aria-label="Periode"
               selectedKey={filters.period}
               onSelectionChange={(k) =>
@@ -317,7 +323,7 @@ export function IdeaToolbar({
         </div>
       ) : null}
 
-      {/* Baris 3: Bulk Actions Bar */}
+      {/* Baris 4: Bulk Actions Bar */}
       {selectedCount > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/40 bg-accent/5 px-3 py-2">
           <span className="text-xs font-medium text-foreground">
@@ -373,9 +379,9 @@ export function IdeaToolbar({
               </Dropdown.Popover>
             </Dropdown>
 
-            <Button size="sm" variant="danger-soft" onPress={onBulkArchive}>
-              <Archive className="h-3.5 w-3.5" />
-              Arsipkan
+            <Button size="sm" variant="danger-soft" onPress={onBulkDelete}>
+              <Trash2 className="h-3.5 w-3.5" />
+              Hapus
             </Button>
           </div>
         </div>
@@ -399,6 +405,7 @@ function FilterSelect({
     <div className="space-y-1">
       <span className="block text-[11px] font-medium text-muted">{label}</span>
       <Select
+        variant="secondary"
         aria-label={label}
         selectedKey={value}
         onSelectionChange={(k) => onChange(String(k))}

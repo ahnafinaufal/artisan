@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Chip, toast } from "@heroui/react";
+import { AlertDialog, Button, Chip, toast } from "@heroui/react";
 import { COLUMNS_CONFIG, INITIAL_IDEAS } from "./mockData";
 import type {
   ColumnKey,
@@ -23,6 +23,7 @@ import {
 } from "./components/IdeaTable";
 import { IdeaDetailDrawer } from "./components/IdeaDetailDrawer";
 import { CreateIdeaPage } from "./CreateIdeaPage";
+import { IdeaDetailPage } from "./IdeaDetailPage";
 
 const DEFAULT_FILTERS: IdeaFilters = {
   search: "",
@@ -41,7 +42,12 @@ const DEFAULT_FILTERS: IdeaFilters = {
 // Tampilkan semua kolom secara default
 const DEFAULT_COLUMNS: ColumnKey[] = COLUMNS_CONFIG.map((c) => c.key);
 
-export function BankIdePage() {
+export interface BankIdePageProps {
+  mode?: "list" | "create" | "edit" | "view";
+  onModeChange?: (mode: "list" | "create" | "edit" | "view", id?: string) => void;
+}
+
+export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
   const [ideas, setIdeas] = useState<ContentIdea[]>(INITIAL_IDEAS);
   const [isLoading, setIsLoading] = useState(true);
   const currentRole: UserRole = "Planner";
@@ -61,8 +67,28 @@ export function BankIdePage() {
   const [page, setPage] = useState(1);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(null);
-  const [pageMode, setPageMode] = useState<"list" | "create">("list");
+  const [deleteTarget, setDeleteTarget] = useState<ContentIdea | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [viewingIdea, setViewingIdea] = useState<ContentIdea | null>(() => {
+    if (typeof window === "undefined") return null;
+    const match = window.location.pathname.match(/^\/bank-ide\/view\/(.+)$/);
+    if (!match) return null;
+    const id = decodeURIComponent(match[1]);
+    return INITIAL_IDEAS.find((item) => item.id === id) ?? null;
+  });
+  const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(() => {
+    if (typeof window === "undefined") return null;
+    const match = window.location.pathname.match(/^\/bank-ide\/edit\/(.+)$/);
+    if (!match) return null;
+    const id = decodeURIComponent(match[1]);
+    return INITIAL_IDEAS.find((item) => item.id === id) ?? null;
+  });
+  const [internalPageMode, setInternalPageMode] = useState<"list" | "create" | "edit" | "view">("list");
+  const pageMode = mode ?? internalPageMode;
+  const setPageMode = (nextMode: "list" | "create" | "edit" | "view", id?: string) => {
+    setInternalPageMode(nextMode);
+    onModeChange?.(nextMode, id);
+  };
 
   // Summary cards follow brand, platform, and period filters, NOT status
   const scopedForSummary = useMemo(() => {
@@ -268,22 +294,89 @@ export function BankIdePage() {
     toast.success(`Ide diduplikasi menjadi ${id}`);
   };
 
-  const handleArchive = (idea: ContentIdea) => {
-    setIdeas((prev) =>
-      prev.map((item) =>
-        item.id === idea.id ? { ...item, isArchived: true } : item,
-      ),
-    );
+  const handleDelete = (idea: ContentIdea) => {
+    setIdeas((prev) => prev.filter((item) => item.id !== idea.id));
     setSelectedIds((prev) => prev.filter((id) => id !== idea.id));
-    toast.info(`Ide ${idea.id} diarsipkan`);
+    toast.success(`Ide ${idea.id} dihapus`);
   };
 
-  if (pageMode === "create") {
+  const handleBulkDelete = () => {
+    const count = selectedIds.length;
+    setIdeas((prev) => prev.filter((item) => !selectedIds.includes(item.id)));
+    setSelectedIds([]);
+    toast.success(`${count} ide dihapus`);
+  };
+
+  if (pageMode === "view") {
+    return (
+      <IdeaDetailPage
+        idea={viewingIdea}
+        currentRole={currentRole}
+        onBack={() => {
+          setViewingIdea(null);
+          setPageMode("list");
+        }}
+        onEdit={(idea) => {
+          setViewingIdea(null);
+          setEditingIdea(idea);
+          setPageMode("edit", idea.id);
+        }}
+        onConvert={handleConvert}
+        onDuplicate={handleDuplicate}
+        onDelete={(idea) => setDeleteTarget(idea)}
+        onAddComment={(ideaId, text) => {
+          const now = new Date().toISOString();
+          setIdeas((prev) =>
+            prev.map((item) =>
+              item.id === ideaId
+                ? {
+                    ...item,
+                    comments: [
+                      ...item.comments,
+                      {
+                        id: `c-${Date.now()}`,
+                        author: "Naufal",
+                        role: currentRole,
+                        text,
+                        createdAt: now,
+                      },
+                    ],
+                  }
+                : item,
+            ),
+          );
+          setViewingIdea((prev) =>
+            prev && prev.id === ideaId
+              ? {
+                  ...prev,
+                  comments: [
+                    ...prev.comments,
+                    {
+                      id: `c-${Date.now()}`,
+                      author: "Naufal",
+                      role: currentRole,
+                      text,
+                      createdAt: now,
+                    },
+                  ],
+                }
+              : prev,
+          );
+        }}
+      />
+    );
+  }
+
+  if (pageMode !== "list") {
     return (
       <CreateIdeaPage
         existingIdeas={ideas}
         currentRole={currentRole}
-        onBack={() => setPageMode("list")}
+        initialIdea={editingIdea}
+        onBack={() => {
+          setEditingIdea(null);
+          setPageMode("list");
+        }}
         onSave={(draft, targetStatus) => {
           const result = handleSaveDrawer(draft, targetStatus);
           if (result.ok) {
@@ -327,6 +420,7 @@ export function BankIdePage() {
 
       {/* Toolbar, Search, Filter & Bulk Actions */}
       <IdeaToolbar
+        totalCount={filteredIdeas.length}
         filters={filters}
         onChangeFilters={(next) => {
           setFilters((p) => ({ ...p, ...next }));
@@ -373,15 +467,7 @@ export function BankIdePage() {
           );
           setSelectedIds([]);
         }}
-        onBulkArchive={() => {
-          setIdeas((prev) =>
-            prev.map((i) =>
-              selectedIds.includes(i.id) ? { ...i, isArchived: true } : i,
-            ),
-          );
-          toast.info(`${selectedIds.length} ide diarsipkan`);
-          setSelectedIds([]);
-        }}
+        onBulkDelete={() => setBulkDeleteOpen(true)}
         onOpenNewIdea={() => {
           setEditingIdea(null);
           setDrawerOpen(false);
@@ -427,16 +513,17 @@ export function BankIdePage() {
         pageSize={10}
         onPageChange={setPage}
         onView={(idea) => {
-          setEditingIdea(idea);
-          setDrawerOpen(true);
+          setViewingIdea(idea);
+          setPageMode("view", idea.id);
         }}
         onEdit={(idea) => {
           setEditingIdea(idea);
-          setDrawerOpen(true);
+          setDrawerOpen(false);
+          setPageMode("edit", idea.id);
         }}
         onDuplicate={handleDuplicate}
         onConvert={handleConvert}
-        onArchive={handleArchive}
+        onDelete={(idea) => setDeleteTarget(idea)}
       />
       ) : (
         <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-surface text-sm text-muted">
@@ -494,6 +581,84 @@ export function BankIdePage() {
         }}
         onConvert={handleConvert}
       />
+
+      {/* Alert konfirmasi hapus ide */}
+      <AlertDialog
+        isOpen={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialog.Backdrop>
+          <AlertDialog.Container>
+            <AlertDialog.Dialog className="sm:max-w-[400px]">
+              <AlertDialog.CloseTrigger />
+              <AlertDialog.Header>
+                <AlertDialog.Icon status="danger" />
+                <AlertDialog.Heading>Hapus ide ini?</AlertDialog.Heading>
+              </AlertDialog.Header>
+              <AlertDialog.Body>
+                <p className="text-sm text-muted">
+                  Ide {deleteTarget?.id} akan dihapus permanen dan tidak bisa
+                  dikembalikan.
+                </p>
+              </AlertDialog.Body>
+              <AlertDialog.Footer>
+                <Button slot="close" variant="tertiary" onPress={() => setDeleteTarget(null)}>
+                  Batal
+                </Button>
+                <Button
+                  variant="danger"
+                  onPress={() => {
+                    if (deleteTarget) handleDelete(deleteTarget);
+                    setDeleteTarget(null);
+                  }}
+                >
+                  Hapus
+                </Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Dialog>
+          </AlertDialog.Container>
+        </AlertDialog.Backdrop>
+      </AlertDialog>
+
+      {/* Alert konfirmasi hapus massal */}
+      <AlertDialog
+        isOpen={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+      >
+        <AlertDialog.Backdrop>
+          <AlertDialog.Container>
+            <AlertDialog.Dialog className="sm:max-w-[400px]">
+              <AlertDialog.CloseTrigger />
+              <AlertDialog.Header>
+                <AlertDialog.Icon status="danger" />
+                <AlertDialog.Heading>Hapus ide terpilih?</AlertDialog.Heading>
+              </AlertDialog.Header>
+              <AlertDialog.Body>
+                <p className="text-sm text-muted">
+                  {selectedIds.length} ide akan dihapus permanen dan tidak bisa
+                  dikembalikan.
+                </p>
+              </AlertDialog.Body>
+              <AlertDialog.Footer>
+                <Button slot="close" variant="tertiary" onPress={() => setBulkDeleteOpen(false)}>
+                  Batal
+                </Button>
+                <Button
+                  variant="danger"
+                  onPress={() => {
+                    handleBulkDelete();
+                    setBulkDeleteOpen(false);
+                  }}
+                >
+                  Hapus
+                </Button>
+              </AlertDialog.Footer>
+            </AlertDialog.Dialog>
+          </AlertDialog.Container>
+        </AlertDialog.Backdrop>
+      </AlertDialog>
 
     </section>
   );

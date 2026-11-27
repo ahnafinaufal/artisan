@@ -42,6 +42,43 @@
 
   --color-danger: var(--danger);
   --color-danger-foreground: var(--danger-foreground);
+
+  --color-input-secondary: var(--input-secondary);
+}
+
+/*
+  Secondary form fields use a slightly lighter grey than HeroUI's default
+  in light mode. Dark mode keeps the theme's own `--default` fill.
+*/
+:root[data-theme="light"],
+.light,
+[data-theme="light"] {
+  --input-secondary: oklch(96% 0.001 286.375);
+  --input-secondary-hover: color-mix(
+    in oklab,
+    var(--input-secondary) 96%,
+    var(--default-foreground) 4%
+  );
+}
+
+.dark,
+[data-theme="dark"] {
+  --input-secondary: var(--default);
+  --input-secondary-hover: var(--default-hover);
+}
+
+@layer components {
+  .input--secondary {
+    --input-bg: var(--input-secondary);
+    --input-bg-hover: var(--input-secondary-hover);
+    --input-bg-focus: var(--input-secondary);
+  }
+
+  .input-group--secondary {
+    --input-group-bg: var(--input-secondary);
+    --input-group-bg-hover: var(--input-secondary-hover);
+    --input-group-bg-focus: var(--input-secondary);
+  }
 }
 
 /* HeroUI Pro Recharts Theming */

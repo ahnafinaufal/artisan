@@ -11,7 +11,7 @@ import {
   Table,
 } from "@heroui/react";
 import {
-  Archive,
+  Trash2,
   ArrowDown,
   ArrowUp,
   ChevronsUpDown,
@@ -67,7 +67,7 @@ interface IdeaTableProps {
   onEdit: (idea: ContentIdea) => void;
   onDuplicate: (idea: ContentIdea) => void;
   onConvert: (idea: ContentIdea) => void;
-  onArchive: (idea: ContentIdea) => void;
+  onDelete: (idea: ContentIdea) => void;
 }
 
 const STATUS_COLOR: Record<
@@ -124,7 +124,7 @@ export function IdeaTable({
   onEdit,
   onDuplicate,
   onConvert,
-  onArchive,
+  onDelete,
 }: IdeaTableProps) {
   const totalPages = Math.max(1, Math.ceil(ideas.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -378,7 +378,7 @@ export function IdeaTable({
                                 const action = String(key);
                                 if (action === "duplicate") onDuplicate(idea);
                                 if (action === "convert") onConvert(idea);
-                                if (action === "archive") onArchive(idea);
+                                if (action === "delete") onDelete(idea);
                               }}
                             >
                               <Dropdown.Item id="duplicate" textValue="Duplikat">
@@ -397,12 +397,13 @@ export function IdeaTable({
                                 Jadikan Konten
                               </Dropdown.Item>
                               <Dropdown.Item
-                                id="archive"
-                                textValue="Arsipkan"
+                                id="delete"
+                                textValue="Hapus"
                                 variant="danger"
+                                 className="text-danger"
                               >
-                                <Archive className="h-3.5 w-3.5" />
-                                Arsipkan
+                                <Trash2 className="h-3.5 w-3.5 text-danger" />
+                                Hapus
                               </Dropdown.Item>
                             </Dropdown.Menu>
                           </Dropdown.Popover>
