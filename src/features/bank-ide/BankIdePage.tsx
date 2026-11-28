@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertDialog, Button, Chip, toast } from "@heroui/react";
 import { COLUMNS_CONFIG, INITIAL_IDEAS } from "./mockData";
 import type {
   ColumnKey,
   ContentIdea,
   IdeaFilters,
+  IdeaHistoryItem,
   IdeaStatus,
   Priority,
   SummaryCardKey,
@@ -42,6 +43,34 @@ const DEFAULT_FILTERS: IdeaFilters = {
 // Tampilkan semua kolom secara default
 const DEFAULT_COLUMNS: ColumnKey[] = COLUMNS_CONFIG.map((c) => c.key);
 
+const AUDIT_FIELD_LABELS: Partial<Record<keyof ContentIdea, string>> = {
+  title: "judul",
+  brand: "brand",
+  pillar: "content pillar",
+  platforms: "platform",
+  format: "format",
+  priority: "prioritas",
+  objective: "objective",
+  campaign: "campaign",
+  source: "sumber ide",
+  tags: "tag",
+  persona: "persona",
+  audienceProblem: "masalah audiens",
+  hook: "hook",
+  angle: "angle",
+  keyPoints: "poin utama",
+  cta: "CTA",
+  visualConcept: "konsep visual",
+  draftCaption: "draft caption",
+  referenceLinks: "referensi",
+  referenceNotes: "catatan referensi",
+  pic: "PIC",
+  targetDate: "target tayang",
+  relevanceScore: "skor relevansi",
+  impactScore: "skor dampak",
+  easeScore: "skor kemudahan",
+};
+
 export interface BankIdePageProps {
   mode?: "list" | "create" | "edit" | "view";
   onModeChange?: (mode: "list" | "create" | "edit" | "view", id?: string) => void;
@@ -71,20 +100,29 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [viewingIdea, setViewingIdea] = useState<ContentIdea | null>(() => {
     if (typeof window === "undefined") return null;
-    const match = window.location.pathname.match(/^\/bank-ide\/view\/(.+)$/);
+    const match = window.location.pathname.match(/^\/(?:workspace\/)?bank-ide\/view\/(.+)$/);
     if (!match) return null;
     const id = decodeURIComponent(match[1]);
     return INITIAL_IDEAS.find((item) => item.id === id) ?? null;
   });
   const [editingIdea, setEditingIdea] = useState<ContentIdea | null>(() => {
     if (typeof window === "undefined") return null;
-    const match = window.location.pathname.match(/^\/bank-ide\/edit\/(.+)$/);
+    const match = window.location.pathname.match(/^\/(?:workspace\/)?bank-ide\/edit\/(.+)$/);
     if (!match) return null;
     const id = decodeURIComponent(match[1]);
     return INITIAL_IDEAS.find((item) => item.id === id) ?? null;
   });
+  const detailReturnIdeaRef = useRef<ContentIdea | null>(null);
   const [internalPageMode, setInternalPageMode] = useState<"list" | "create" | "edit" | "view">("list");
   const pageMode = mode ?? internalPageMode;
+  useEffect(() => {
+    if (mode !== "view" && mode !== "edit") return;
+    const match = window.location.pathname.match(/^\/(?:workspace\/)?bank-ide\/(?:view|edit)\/([^/]+)$/);
+    if (!match) return;
+    const idea = ideas.find((item) => item.id === decodeURIComponent(match[1])) ?? null;
+    if (mode === "view") setViewingIdea(idea);
+    if (mode === "edit") setEditingIdea(idea);
+  }, [mode, ideas]);
   const setPageMode = (nextMode: "list" | "create" | "edit" | "view", id?: string) => {
     setInternalPageMode(nextMode);
     onModeChange?.(nextMode, id);
@@ -177,28 +215,46 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
     if (editingIdea) {
       const nextStatus = targetStatus ?? editingIdea.status;
       setIdeas((prev) =>
-        prev.map((item) =>
-          item.id === editingIdea.id
-            ? {
-                ...item,
-                ...draft,
-                status: nextStatus,
-                statusReason: reason ?? item.statusReason,
-                updatedAt: now,
-                history: [
-                  ...item.history,
-                  {
-                    id: `h-${Date.now()}`,
-                    actor: currentRole,
-                    action: targetStatus
-                      ? `Mengubah status menjadi ${targetStatus}${reason ? `: ${reason}` : ""}`
-                      : "Memperbarui detail ide",
-                    timestamp: now,
-                  },
-                ],
-              }
-            : item,
-        ),
+        prev.map((item) => {
+          if (item.id !== editingIdea.id) return item;
+          const changedFields = Object.entries(AUDIT_FIELD_LABELS)
+            .filter(([key]) =>
+              Object.prototype.hasOwnProperty.call(draft, key) &&
+              JSON.stringify(draft[key as keyof ContentIdea]) !== JSON.stringify(item[key as keyof ContentIdea]),
+            )
+            .map(([, label]) => label);
+          if (reason && reason !== item.statusReason) changedFields.push("alasan status");
+          const historyEvents: IdeaHistoryItem[] = [];
+          if (changedFields.length) {
+            historyEvents.push({
+              id: `h-${Date.now()}-edit`,
+              actor: currentRole,
+              action: "Detail ide diperbarui",
+              details: `Perubahan: ${changedFields.join(", ")}`,
+              kind: "edit",
+              timestamp: now,
+            });
+          }
+          if (nextStatus !== item.status) {
+            historyEvents.push({
+              id: `h-${Date.now()}-status`,
+              actor: currentRole,
+              action: `Status: ${item.status} → ${nextStatus}`,
+              details: reason || undefined,
+              kind: "status",
+              timestamp: now,
+            });
+          }
+          if (!historyEvents.length) return item;
+          return {
+            ...item,
+            ...draft,
+            status: nextStatus,
+            statusReason: reason ?? item.statusReason,
+            updatedAt: now,
+            history: [...item.history, ...historyEvents],
+          };
+        }),
       );
       toast.success(`Ide ${editingIdea.id} diperbarui`);
       return { ok: true };
@@ -239,6 +295,7 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
           id: `h-${Date.now()}`,
           actor: currentRole,
           action: `Membuat ide (${targetStatus ?? "Draft"})`,
+          kind: "activity",
           timestamp: now,
         },
       ],
@@ -266,6 +323,8 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
                   id: `h-${Date.now()}`,
                   actor: "Sistem",
                   action: `Dikonversi menjadi Konten ${contentId}`,
+                  details: "Status: Disetujui → Jadi Konten",
+                  kind: "status",
                   timestamp: now,
                 },
               ],
@@ -288,7 +347,7 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
       createdAt: now,
       updatedAt: now,
       comments: [],
-      history: [{ id: `h-${Date.now()}`, actor: currentRole, action: `Duplikat dari ${idea.id}`, timestamp: now }],
+      history: [{ id: `h-${Date.now()}`, actor: currentRole, action: `Duplikat dari ${idea.id}`, kind: "activity", timestamp: now }],
     };
     setIdeas((prev) => [copy, ...prev]);
     toast.success(`Ide diduplikasi menjadi ${id}`);
@@ -307,6 +366,45 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
     toast.success(`${count} ide dihapus`);
   };
 
+  const applyBulkUpdate = (
+    changes: Partial<Pick<ContentIdea, "status" | "pic" | "priority">>,
+    kind: NonNullable<IdeaHistoryItem["kind"]>,
+    describe: (idea: ContentIdea) => string,
+  ) => {
+    const now = new Date().toISOString();
+    const changedCount = ideas.filter(
+      (idea) =>
+        selectedIds.includes(idea.id) &&
+        Object.entries(changes).some(([key, value]) => idea[key as keyof typeof changes] !== value),
+    ).length;
+    setIdeas((prev) =>
+      prev.map((idea) => {
+        if (!selectedIds.includes(idea.id)) return idea;
+        const hasChange = Object.entries(changes).some(
+          ([key, value]) => idea[key as keyof typeof changes] !== value,
+        );
+        if (!hasChange) return idea;
+        return {
+          ...idea,
+          ...changes,
+          updatedAt: now,
+          history: [
+            ...idea.history,
+            {
+              id: `h-${Date.now()}-${idea.id}`,
+              actor: currentRole,
+              action: describe(idea),
+              kind,
+              timestamp: now,
+            },
+          ],
+        };
+      }),
+    );
+    setSelectedIds([]);
+    return changedCount;
+  };
+
   if (pageMode === "view") {
     return (
       <IdeaDetailPage
@@ -318,6 +416,7 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
         }}
         onEdit={(idea) => {
           setViewingIdea(null);
+          detailReturnIdeaRef.current = null;
           setEditingIdea(idea);
           setPageMode("edit", idea.id);
         }}
@@ -374,11 +473,25 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
         currentRole={currentRole}
         initialIdea={editingIdea}
         onBack={() => {
+          const returnIdea = detailReturnIdeaRef.current ?? editingIdea;
+          detailReturnIdeaRef.current = null;
           setEditingIdea(null);
+          if (returnIdea) {
+            setViewingIdea(returnIdea);
+            setPageMode("view", returnIdea.id);
+            return;
+          }
           setPageMode("list");
         }}
         onSave={(draft, targetStatus) => {
           const result = handleSaveDrawer(draft, targetStatus);
+          if (result.ok && editingIdea) {
+            detailReturnIdeaRef.current = {
+              ...editingIdea,
+              ...draft,
+              status: targetStatus ?? editingIdea.status,
+            };
+          }
           if (result.ok) {
             setFilters(DEFAULT_FILTERS);
             setActiveCard(null);
@@ -441,31 +554,18 @@ export function BankIdePage({ mode, onModeChange }: BankIdePageProps = {}) {
         }}
         selectedCount={selectedIds.length}
         onBulkStatus={(status) => {
-          setIdeas((prev) =>
-            prev.map((i) =>
-              selectedIds.includes(i.id) ? { ...i, status } : i,
-            ),
-          );
-          toast.success(`Status ${selectedIds.length} ide diubah ke ${status}`);
-          setSelectedIds([]);
+          const count = applyBulkUpdate({ status }, "status", (idea) => `Status: ${idea.status} → ${status}`);
+          toast.success(`Status ${count} ide diubah ke ${status}`);
         }}
         onBulkPic={(pic) => {
-          setIdeas((prev) =>
-            prev.map((i) => (selectedIds.includes(i.id) ? { ...i, pic } : i)),
-          );
-          toast.success(`PIC ${selectedIds.length} ide diubah ke ${pic}`);
-          setSelectedIds([]);
+          const count = applyBulkUpdate({ pic }, "edit", (idea) => `PIC: ${idea.pic || "Belum ditetapkan"} → ${pic}`);
+          toast.success(`PIC ${count} ide diubah ke ${pic}`);
         }}
         onBulkPriority={(priority: Priority) => {
-          setIdeas((prev) =>
-            prev.map((i) =>
-              selectedIds.includes(i.id) ? { ...i, priority } : i,
-            ),
-          );
+          const count = applyBulkUpdate({ priority }, "edit", (idea) => `Prioritas: ${idea.priority || "Belum ditetapkan"} → ${priority}`);
           toast.success(
-            `Prioritas ${selectedIds.length} ide diubah ke ${priority}`,
+            `Prioritas ${count} ide diubah ke ${priority}`,
           );
-          setSelectedIds([]);
         }}
         onBulkDelete={() => setBulkDeleteOpen(true)}
         onOpenNewIdea={() => {

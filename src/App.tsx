@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Drawer, Toast } from "@heroui/react";
 import { BankIdePage } from "./features/bank-ide/BankIdePage";
 import {
+  ActivityHeatmapShowcaseSection,
   AccordionShowcaseSection,
   AlertDialogShowcaseSection,
   AlertShowcaseSection,
@@ -38,11 +39,14 @@ import {
   DisclosureShowcaseSection,
   DrawerShowcaseSection,
   DropdownShowcaseSection,
+  DonutChartShowcaseSection,
+  EarningsShowcaseSection,
   EmptyStateShowcaseSection,
   ErrorMessageShowcaseSection,
   FieldErrorShowcaseSection,
   FieldsetShowcaseSection,
   FormShowcaseSection,
+  FunnelChartShowcaseSection,
   InputGroupShowcaseSection,
   InputOTPShowcaseSection,
   InputShowcaseSection,
@@ -91,68 +95,45 @@ import {
   TooltipShowcaseSection,
   TypographyShowcaseSection,
   type ActiveSection,
+  WorkspaceDashboard,
 } from "./components/organisms";
 import type { AtomicLevel, ComponentCategory } from "./data/componentsCatalog";
+import { parseAppRoute, pathForBankIdeMode, pathForSection } from "./navigation";
 
 export function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState<ActiveSection>(() => {
-    if (typeof window !== "undefined") {
-      if (window.location.pathname.startsWith("/bank-ide")) {
-        return "bank-ide";
-      }
-    }
-    return "catalog";
+    return typeof window === "undefined" ? "dashboard" : parseAppRoute(window.location.pathname).section;
   });
   const [isCreateIdeaRoute, setIsCreateIdeaRoute] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.location.pathname === "/bank-ide/create";
-    }
-    return false;
+    return typeof window !== "undefined" && parseAppRoute(window.location.pathname).bankIdeMode === "create";
   });
   const [isEditIdeaRoute, setIsEditIdeaRoute] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.location.pathname.startsWith("/bank-ide/edit");
-    }
-    return false;
+    return typeof window !== "undefined" && parseAppRoute(window.location.pathname).bankIdeMode === "edit";
   });
   const [isViewIdeaRoute, setIsViewIdeaRoute] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.location.pathname.startsWith("/bank-ide/view");
-    }
-    return false;
+    return typeof window !== "undefined" && parseAppRoute(window.location.pathname).bankIdeMode === "view";
   });
-  const [selectedComponentName, setSelectedComponentName] = useState<string | null>(null);
+  const [selectedComponentName, setSelectedComponentName] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : parseAppRoute(window.location.pathname).componentName,
+  );
   const [selectedLevel, setSelectedLevel] = useState<"all" | AtomicLevel>("all");
   const [selectedCategory, setSelectedCategory] = useState<"all" | ComponentCategory>("all");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
+    const initialRoute = parseAppRoute(window.location.pathname);
+    if (window.location.pathname !== initialRoute.path) {
+      window.history.replaceState(null, "", initialRoute.path);
+    }
     const handlePopState = () => {
-      const path = window.location.pathname;
-      if (path === "/bank-ide/create") {
-        setActiveSection("bank-ide");
-        setIsCreateIdeaRoute(true);
-        setIsEditIdeaRoute(false);
-      } else if (path.startsWith("/bank-ide/edit")) {
-        setActiveSection("bank-ide");
-        setIsCreateIdeaRoute(false);
-        setIsEditIdeaRoute(true);
-        setIsViewIdeaRoute(false);
-      } else if (path.startsWith("/bank-ide/view")) {
-        setActiveSection("bank-ide");
-        setIsCreateIdeaRoute(false);
-        setIsEditIdeaRoute(false);
-        setIsViewIdeaRoute(true);
-      } else if (path === "/bank-ide") {
-        setActiveSection("bank-ide");
-        setIsCreateIdeaRoute(false);
-        setIsEditIdeaRoute(false);
-      } else {
-        setIsCreateIdeaRoute(false);
-        setIsEditIdeaRoute(false);
-      }
+      const route = parseAppRoute(window.location.pathname);
+      setActiveSection(route.section);
+      setIsCreateIdeaRoute(route.bankIdeMode === "create");
+      setIsEditIdeaRoute(route.bankIdeMode === "edit");
+      setIsViewIdeaRoute(route.bankIdeMode === "view");
+      setSelectedComponentName(route.componentName);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -160,16 +141,21 @@ export function App() {
 
   const handleSelectSection = (section: ActiveSection) => {
     setActiveSection(section);
-    if (section === "bank-ide") {
-      setIsCreateIdeaRoute(false);
-      if (window.location.pathname !== "/bank-ide") {
-        window.history.pushState(null, "", "/bank-ide");
-      }
-    } else {
-      setIsCreateIdeaRoute(false);
-      if (window.location.pathname.startsWith("/bank-ide")) {
-        window.history.pushState(null, "", "/");
-      }
+    setIsCreateIdeaRoute(false);
+    setIsEditIdeaRoute(false);
+    setIsViewIdeaRoute(false);
+    const targetPath = pathForSection(section, selectedComponentName);
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, "", targetPath);
+    }
+  };
+
+  const handleSelectComponent = (componentName: string) => {
+    setSelectedComponentName(componentName);
+    setActiveSection("component-detail");
+    const targetPath = pathForSection("component-detail", componentName);
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, "", targetPath);
     }
   };
 
@@ -180,14 +166,7 @@ export function App() {
     setIsCreateIdeaRoute(nextIsCreate);
     setIsEditIdeaRoute(nextIsEdit);
     setIsViewIdeaRoute(nextIsView);
-    const targetPath =
-      nextIsCreate
-        ? "/bank-ide/create"
-        : nextIsEdit
-          ? `/bank-ide/edit/${encodeURIComponent(id ?? "")}`
-          : nextIsView
-            ? `/bank-ide/view/${encodeURIComponent(id ?? "")}`
-            : "/bank-ide";
+    const targetPath = pathForBankIdeMode(mode, id);
     if (window.location.pathname !== targetPath && !((nextIsEdit || nextIsView) && !id)) {
       window.history.pushState(null, "", targetPath);
     }
@@ -212,23 +191,26 @@ export function App() {
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     if (value.trim() && activeSection !== "catalog") {
-      setActiveSection("catalog");
+      handleSelectSection("catalog");
     }
   };
 
   const breadcrumbs = [
     {
       label: "Home",
-      onPress: () => setActiveSection("overview"),
+      onPress: () => handleSelectSection("dashboard"),
     },
-    {
-      label: "Design System",
-      onPress: () => {
-        setActiveSection("catalog");
-        setSelectedCategory("all");
-        setSelectedLevel("all");
-      },
-    },
+    ...(activeSection === "dashboard" || activeSection === "bank-ide"
+      ? []
+      : [{
+          label: "Design System",
+          onPress: () => {
+            handleSelectSection("catalog");
+            setSelectedCategory("all");
+            setSelectedLevel("all");
+          },
+        }]),
+    ...(activeSection === "dashboard" ? [{ label: "Dashboard" }] : []),
     ...(activeSection === "bank-ide"
       ? isViewIdeaRoute
         ? [
@@ -417,7 +399,7 @@ export function App() {
           ? [
               {
                 label: "Charts & KPI",
-                onPress: () => setActiveSection("kpi"),
+                onPress: () => handleSelectSection("kpi"),
               },
               {
                 label:
@@ -425,14 +407,22 @@ export function App() {
                     ? "KPI"
                     : activeSection === "chart-area"
                       ? "AreaChart"
+                      : activeSection === "chart-activity-heatmap"
+                        ? "ActivityHeatmap"
                       : activeSection === "chart-bar"
                         ? "BarChart"
                         : activeSection === "chart-line"
                           ? "LineChart"
                           : activeSection === "chart-composed"
                             ? "ComposedChart"
-                            : activeSection === "chart-pie"
-                              ? "PieChart"
+                            : activeSection === "chart-donut"
+                              ? "DonutChart"
+                              : activeSection === "chart-earnings"
+                                ? "Earnings"
+                                : activeSection === "chart-funnel"
+                                  ? "FunnelChart"
+                                  : activeSection === "chart-pie"
+                                    ? "PieChart"
                               : activeSection === "chart-radar"
                                 ? "RadarChart"
                                 : activeSection === "chart-radial"
@@ -444,6 +434,7 @@ export function App() {
               {
                 label: "Components",
                 onPress: () => {
+                  handleSelectSection("catalog");
                   setSelectedCategory("all");
                   setSelectedLevel("all");
                 },
@@ -481,7 +472,7 @@ export function App() {
             activeSection={activeSection}
             onSelectSection={handleSelectSection}
             selectedComponentName={selectedComponentName}
-            onSelectComponent={setSelectedComponentName}
+            onSelectComponent={handleSelectComponent}
             selectedLevel={selectedLevel}
             onSelectLevel={setSelectedLevel}
             selectedCategory={selectedCategory}
@@ -499,7 +490,7 @@ export function App() {
                   activeSection={activeSection}
                   onSelectSection={handleSelectSection}
                   selectedComponentName={selectedComponentName}
-                  onSelectComponent={setSelectedComponentName}
+                  onSelectComponent={handleSelectComponent}
                   selectedLevel={selectedLevel}
                   onSelectLevel={setSelectedLevel}
                   selectedCategory={selectedCategory}
@@ -525,6 +516,9 @@ export function App() {
           />
 
           <main className="w-full flex-1 space-y-10 bg-background px-4 py-8 sm:px-6">
+            {activeSection === "dashboard" ? (
+              <WorkspaceDashboard onOpenBankIde={() => handleSelectSection("bank-ide")} />
+            ) : null}
             {activeSection === "bank-ide" ? (
               <BankIdePage
                 mode={isViewIdeaRoute ? "view" : isEditIdeaRoute ? "edit" : isCreateIdeaRoute ? "create" : "list"}
@@ -546,7 +540,7 @@ export function App() {
             {activeSection === "component-detail" && selectedComponentName ? (
               <ComponentDetailSection
                 componentName={selectedComponentName}
-                onBackToCatalog={() => setActiveSection("catalog")}
+                onBackToCatalog={() => handleSelectSection("catalog")}
               />
             ) : null}
             {activeSection === "toggle-button" ? <ToggleButtonShowcaseSection /> : null}
@@ -627,11 +621,15 @@ export function App() {
             {activeSection === "timeline" ? <TimelineShowcaseSection /> : null}
             {activeSection === "kpi" ? <KpiShowcaseSection /> : null}
             {activeSection === "chart-area" ? <ChartsShowcaseSection view="area" /> : null}
+            {activeSection === "chart-activity-heatmap" ? <ActivityHeatmapShowcaseSection /> : null}
             {activeSection === "chart-bar" ? <BarChartShowcaseSection /> : null}
             {activeSection === "chart-line" ? <LineChartShowcaseSection /> : null}
             {activeSection === "chart-composed" ? (
               <ChartsShowcaseSection view="composed" />
             ) : null}
+            {activeSection === "chart-donut" ? <DonutChartShowcaseSection /> : null}
+            {activeSection === "chart-earnings" ? <EarningsShowcaseSection /> : null}
+            {activeSection === "chart-funnel" ? <FunnelChartShowcaseSection /> : null}
             {activeSection === "chart-pie" ? <ChartsShowcaseSection view="pie" /> : null}
             {activeSection === "chart-radar" ? <ChartsShowcaseSection view="radar" /> : null}
             {activeSection === "chart-radial" ? (
@@ -647,7 +645,7 @@ export function App() {
                 onSelectLevel={setSelectedLevel}
                 selectedCategory={selectedCategory}
                 onSelectCategory={setSelectedCategory}
-                onOpenComponent={setActiveSection}
+                onOpenComponent={handleSelectSection}
               />
             ) : null}
           </main>

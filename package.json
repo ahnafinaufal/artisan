@@ -19,6 +19,7 @@
     "@internationalized/date": "^3.12.4",
     "@react-aria/ssr": "^3.10.1",
     "@react-aria/utils": "^3.34.1",
+    "framer-motion": "^14.14.0",
     "lucide-react": "^1.80.0",
     "react": "^19.3.1",
     "react-aria": "^3.53.1",

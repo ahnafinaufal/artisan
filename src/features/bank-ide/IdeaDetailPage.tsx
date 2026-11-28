@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { ConceptStoryboard } from "./components/ConceptStoryboard";
+import { IdeaAuditTimeline } from "./components/IdeaAuditTimeline";
 import { PIC_IMAGE } from "./components/IdeaDetailDrawer";
 import { PlatformLogo } from "./components/PlatformLogo";
 import { ReferenceLinksCell } from "./components/ReferenceLinksCell";
@@ -282,7 +283,7 @@ export function IdeaDetailPage({
             </div>
           </Card>
 
-          <ConceptStoryboard idea={idea} />
+          <ConceptStoryboard idea={idea} showScriptVoTabs />
 
           <Card className="space-y-4 p-5">
             <SectionHeading icon={<MessageSquare className="h-4 w-4" />} title="Komentar" />
@@ -323,33 +324,14 @@ export function IdeaDetailPage({
             </div>
           </Card>
 
-          <Card className="space-y-4 p-5">
-            <SectionHeading icon={<FileText className="h-4 w-4" />} title="Riwayat" />
-            {idea.history?.length ? (
-              <ul className="space-y-2">
-                {idea.history.map((item) => (
-                  <li key={item.id} className="flex gap-3 text-sm">
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />
-                    <div>
-                      <p className="text-foreground">{item.action}</p>
-                      <p className="text-xs text-muted">
-                        {item.actor} · {formatDateTime(item.timestamp)}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted">Belum ada riwayat.</p>
-            )}
-          </Card>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-20">
+        <aside className="space-y-4 lg:self-start">
           <Card className="space-y-3 p-5">
             <h3 className="text-sm font-semibold text-foreground">Referensi</h3>
             <ReferenceLinksCell links={idea.referenceLinks ?? []} variant="list" />
           </Card>
+          <IdeaAuditTimeline idea={idea} />
         </aside>
       </div>
     </section>

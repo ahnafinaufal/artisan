@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Cpu,
   Database,
+  House,
   FileCode2,
   FormInput,
   Globe,
@@ -31,6 +32,7 @@ import {
   Sparkles,
   TrendingUp,
   Type,
+  Wallet,
   Wrench,
 } from "lucide-react";
 import {
@@ -42,6 +44,7 @@ import { StatusChip } from "../atoms";
 import { SidebarNavItem } from "../molecules";
 
 export type ActiveSection =
+  | "dashboard"
   | "bank-ide"
   | "overview"
   | "playground"
@@ -127,9 +130,13 @@ export type ActiveSection =
   | "catalog"
   | "kpi"
   | "chart-area"
+  | "chart-activity-heatmap"
   | "chart-bar"
   | "chart-line"
   | "chart-composed"
+  | "chart-donut"
+  | "chart-earnings"
+  | "chart-funnel"
   | "chart-pie"
   | "chart-radar"
   | "chart-radial"
@@ -170,7 +177,7 @@ const CATEGORY_ICONS: Record<ComponentCategory, ReactNode> = {
 
 const CATEGORIES = Object.keys(CATEGORY_ICONS) as ComponentCategory[];
 
-const COMPONENT_SECTION_MAP: Partial<Record<string, ActiveSection>> = {
+export const COMPONENT_SECTION_MAP: Partial<Record<string, ActiveSection>> = {
   Accordion: "accordion",
   Alert: "alert",
   AlertDialog: "alert-dialog",
@@ -251,25 +258,33 @@ const COMPONENT_SECTION_MAP: Partial<Record<string, ActiveSection>> = {
   Tooltip: "tooltip",
   Typography: "typography",
   AreaChart: "chart-area",
+  ActivityHeatmap: "chart-activity-heatmap",
   BarChart: "chart-bar",
   LineChart: "chart-line",
   ComposedChart: "chart-composed",
+  DonutChart: "chart-donut",
+  Earnings: "chart-earnings",
+  FunnelChart: "chart-funnel",
   PieChart: "chart-pie",
   RadarChart: "chart-radar",
   RadialChart: "chart-radial",
   ChartTooltip: "chart-tooltip",
 };
 
-const CHART_MENU_ITEMS: Array<{
+export const CHART_MENU_ITEMS: Array<{
   id: ActiveSection;
   label: string;
   icon: ReactNode;
 }> = [
   { id: "kpi", label: "KPI", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { id: "chart-activity-heatmap", label: "ActivityHeatmap", icon: <Activity className="h-3.5 w-3.5" /> },
   { id: "chart-area", label: "AreaChart", icon: <AreaChartIcon className="h-3.5 w-3.5" /> },
   { id: "chart-bar", label: "BarChart", icon: <BarChart3 className="h-3.5 w-3.5" /> },
   { id: "chart-line", label: "LineChart", icon: <LineChartIcon className="h-3.5 w-3.5" /> },
   { id: "chart-composed", label: "ComposedChart", icon: <Activity className="h-3.5 w-3.5" /> },
+  { id: "chart-donut", label: "DonutChart", icon: <PieChart className="h-3.5 w-3.5" /> },
+  { id: "chart-earnings", label: "Earnings", icon: <Wallet className="h-3.5 w-3.5" /> },
+  { id: "chart-funnel", label: "FunnelChart", icon: <ListFilter className="h-3.5 w-3.5" /> },
   { id: "chart-pie", label: "PieChart", icon: <PieChart className="h-3.5 w-3.5" /> },
   { id: "chart-radar", label: "RadarChart", icon: <Radar className="h-3.5 w-3.5" /> },
   { id: "chart-radial", label: "RadialChart", icon: <Sparkles className="h-3.5 w-3.5" /> },
@@ -310,7 +325,6 @@ export function Sidebar({
       onSelectSection(mapped);
     } else {
       onSelectComponent?.(componentName);
-      onSelectSection("component-detail");
     }
     onItemNavigate?.();
   };
@@ -333,6 +347,13 @@ export function Sidebar({
         </div>
 
         <ScrollShadow className="flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto px-2 pb-4">
+          <SidebarNavItem
+            isCollapsed
+            icon={<House className="h-4 w-4" />}
+            label="Dashboard"
+            isActive={activeSection === "dashboard"}
+            onClick={() => handleSelectSection("dashboard")}
+          />
           <SidebarNavItem
             isCollapsed
             icon={<Lightbulb className="h-4 w-4" />}
@@ -415,9 +436,9 @@ export function Sidebar({
       {/* Mode Switcher: Workspace (fitur) | Components (showcase HeroUI) */}
       <div className="px-4 pb-3">
         <Tabs
-          selectedKey={activeSection === "bank-ide" ? "workspace" : "components"}
+          selectedKey={activeSection === "dashboard" || activeSection === "bank-ide" ? "workspace" : "components"}
           onSelectionChange={(key) => {
-            handleSelectSection(key === "workspace" ? "bank-ide" : "catalog");
+            handleSelectSection(key === "workspace" ? "dashboard" : "catalog");
           }}
         >
           <Tabs.ListContainer>
@@ -439,12 +460,18 @@ export function Sidebar({
 
       {/* Scrollable Navigation Groups */}
       <ScrollShadow className="flex-1 space-y-4 overflow-y-auto px-3 pb-6">
-        {activeSection === "bank-ide" ? (
+        {activeSection === "dashboard" || activeSection === "bank-ide" ? (
           /* Tab Workspace — hanya fitur-fitur aplikasi */
           <div className="space-y-1">
             <p className="px-2.5 pb-1 text-xs font-medium text-muted">
               Workspace
             </p>
+            <SidebarNavItem
+              icon={<House className="h-4 w-4" />}
+              label="Dashboard"
+              isActive={activeSection === "dashboard"}
+              onClick={() => handleSelectSection("dashboard")}
+            />
             <SidebarNavItem
               icon={<Lightbulb className="h-4 w-4" />}
               label="Bank Ide Konten"

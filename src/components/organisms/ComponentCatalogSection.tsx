@@ -27,6 +27,7 @@ export interface ComponentCatalogSectionProps {
 }
 
 const DETAIL_SECTION_MAP: Partial<Record<string, ActiveSection>> = {
+  ActivityHeatmap: "chart-activity-heatmap",
   Accordion: "accordion",
   Alert: "alert",
   AlertDialog: "alert-dialog",
@@ -110,6 +111,9 @@ const DETAIL_SECTION_MAP: Partial<Record<string, ActiveSection>> = {
   BarChart: "chart-bar",
   LineChart: "chart-line",
   ComposedChart: "chart-composed",
+  DonutChart: "chart-donut",
+  Earnings: "chart-earnings",
+  FunnelChart: "chart-funnel",
   PieChart: "chart-pie",
   RadarChart: "chart-radar",
   RadialChart: "chart-radial",
