@@ -1,10 +1,8 @@
 "use client";
 
-import React, {
+import {
   type ReactNode,
   useEffect,
-  useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -14,7 +12,6 @@ import {
   motion,
   useMotionValue,
   useReducedMotion,
-  useSpring,
   useTransform,
 } from "framer-motion";
 
@@ -86,7 +83,6 @@ export interface EarningsProps {
 export const SOURCE_COLORS = ["#6d7cff", "#34d1bf", "#ffb44c", "#ff6b8b", "#a78bfa", "#5ac8fa"];
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
-const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 const cx = (...a: (string | false | null | undefined)[]) => a.filter(Boolean).join(" ");
 const pct = (x: number) => `${Math.abs(x) >= 10 ? Math.round(Math.abs(x)) : Math.abs(x).toFixed(1)}%`;
 
@@ -94,21 +90,6 @@ const focus =
   "outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/70 dark:focus-visible:ring-white/40";
 const ring = "ring-1 ring-black/[0.07] dark:ring-white/[0.07]";
 const muted = "text-neutral-500";
-
-function useElementWidth<T extends HTMLElement>(initial: number) {
-  const ref = useRef<T>(null);
-  const [width, setWidth] = useState(initial);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => setWidth(Math.round(el.clientWidth) || initial);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [initial]);
-  return [ref, width] as const;
-}
 
 /** Smooth monotone cubic (never overshoots the data) */
 export function monotonePath(p: [number, number][]): string {
@@ -189,7 +170,6 @@ function SegmentedControl<T extends string>({
   options: { value: T; label: string }[];
   label: string;
 }) {
-  const id = useId();
   return (
     <div role="radiogroup" aria-label={label} className="relative inline-flex shrink-0 rounded-full bg-black/[0.04] p-0.5 dark:bg-white/[0.05]">
       {options.map((o) => {
@@ -207,7 +187,7 @@ function SegmentedControl<T extends string>({
           >
             {on && (
               <motion.span
-                layoutId={id}
+                layoutId={`${label}-period`}
                 className="absolute inset-0 -z-10 rounded-full bg-white shadow-sm dark:bg-neutral-800"
                 transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
               />
@@ -224,8 +204,7 @@ function SegmentedControl<T extends string>({
 /*  Earnings                                                                  */
 /* ========================================================================== */
 
-const N_POINTS = 32;
-const SPARK_H = 76;
+/* no sparkline — compact readout */
 
 export function Earnings({
   periods,
@@ -240,29 +219,25 @@ export function Earnings({
 }: EarningsProps) {
   const reduce = useReducedMotion();
   const anim = animated && !reduce;
-  const uid = useId().replace(/:/g, "");
-  const [sparkRef, width] = useElementWidth<HTMLDivElement>(480);
-  const svgRef = useRef<SVGSVGElement>(null);
+
   const cardRef = useRef<HTMLElement>(null);
 
   const [periodId, setPeriodId] = useState(defaultPeriod ?? periods[periods.length > 2 ? 1 : 0]?.id ?? "");
   const [activeSource, setActiveSource] = useState<string | null>(null);
-  const [scrub, setScrub] = useState<number | null>(null);
 
   const period = periods.find((p) => p.id === periodId) ?? periods[0];
 
-  // tap outside clears a tap-selected source / scrub (touch)
+  // tap outside clears a tap-selected source (touch)
   useEffect(() => {
-    if (activeSource === null && scrub === null) return;
+    if (activeSource === null) return;
     const down = (e: PointerEvent) => {
       if (!cardRef.current?.contains(e.target as Node)) {
         setActiveSource(null);
-        setScrub(null);
       }
     };
     document.addEventListener("pointerdown", down);
     return () => document.removeEventListener("pointerdown", down);
-  }, [activeSource, scrub]);
+  }, [activeSource]);
 
   const money = useMemo(() => {
     const big = (period?.total ?? period?.sources.reduce((s, x) => s + x.amount, 0) ?? 0) >= 10000;
@@ -278,81 +253,24 @@ export function Earnings({
   const sources = period?.sources ?? [];
   const sum = sources.reduce((s, x) => s + Math.max(0, x.amount), 0);
   const total = period?.total ?? sum;
-  const trend = period?.trend ?? [];
-  const n = trend.length;
 
   const delta =
     period?.previous !== undefined && period.previous !== 0
       ? ((total - period.previous) / Math.abs(period.previous)) * 100
-      : n > 1 && trend[0] !== 0
-        ? ((trend[n - 1] - trend[0]) / Math.abs(trend[0])) * 100
-        : 0;
+      : 0;
   const deltaRounded = Math.round(delta * 10) / 10;
 
   const src = sources.find((s) => s.id === activeSource) ?? null;
   const maxAmount = Math.max(1e-9, ...sources.map((s) => s.amount));
 
-  // what the big readout shows right now: a source, a scrubbed point, or the total
+  // what the big readout shows right now: a source or the total
   const readout = src
     ? { label: src.label, value: src.amount, change: src.change, note: `${pct(sum ? (src.amount / sum) * 100 : 0)} of earnings` }
-    : scrub !== null && n
-      ? { label: period.trendLabels?.[scrub] ?? `Point ${scrub + 1}`, value: trend[scrub], change: undefined, note: "earned" }
-      : { label: title, value: total, change: deltaRounded, note: period?.comparison ?? "vs previous period" };
-
-  /* -------------------------------- trend -------------------------------- */
-  const padX = 2, padT = 10, padB = 6;
-  const min = n ? Math.min(...trend) : 0;
-  const span = (n ? Math.max(...trend) : 1) - min || 1;
-  const yOf = (v: number) => padT + (1 - (v - min) / span) * (SPARK_H - padT - padB);
-  const xOf = (f: number) => padX + f * (width - padX * 2);
-  const smooth = resample(trend, N_POINTS);
-  const pts = smooth.map((v, i) => [xOf(i / (N_POINTS - 1)), yOf(v)] as [number, number]);
-  const line = monotonePath(pts);
-  const area = n > 1 ? `${line}L${pts[N_POINTS - 1][0].toFixed(2)} ${SPARK_H}L${pts[0][0].toFixed(2)} ${SPARK_H}Z` : "";
-  const accent = SOURCE_COLORS[0];
-
-  const curX = useSpring(0, { stiffness: 600, damping: 44, mass: 0.5 });
-  const curY = useSpring(0, { stiffness: 600, damping: 44, mass: 0.5 });
-  const seen = useRef(false);
-  useEffect(() => {
-    if (scrub === null || n < 2) {
-      seen.current = false;
-      return;
-    }
-    const f = scrub / (n - 1);
-    const i0 = Math.min(N_POINTS - 2, Math.floor(f * (N_POINTS - 1)));
-    const lf = f * (N_POINTS - 1) - i0;
-    const y = pts[i0][1] + (pts[i0 + 1][1] - pts[i0][1]) * lf;
-    if (!seen.current) {
-      curX.jump(xOf(f));
-      curY.jump(y);
-      seen.current = true;
-    } else {
-      curX.set(xOf(f));
-      curY.set(y);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scrub, width, periodId]);
-
-  const scrubTo = (e: React.PointerEvent) => {
-    if (n < 2 || !svgRef.current) return;
-    const box = svgRef.current.getBoundingClientRect();
-    const f = clamp((e.clientX - box.left - padX) / (width - padX * 2), 0, 1);
-    setScrub(Math.round(f * (n - 1)));
-    setActiveSource(null);
-  };
-  const onSparkKey = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowRight") setScrub((s) => clamp((s ?? n - 2) + 1, 0, n - 1));
-    else if (e.key === "ArrowLeft") setScrub((s) => clamp((s ?? n) - 1, 0, n - 1));
-    else if (e.key === "Escape") setScrub(null);
-    else return;
-    e.preventDefault();
-  };
+    : { label: title, value: total, change: deltaRounded, note: period?.comparison ?? "vs previous period" };
 
   const choosePeriod = (id: string) => {
     setPeriodId(id);
     setActiveSource(null);
-    setScrub(null);
     onPeriodChange?.(id);
   };
 
@@ -366,8 +284,7 @@ export function Earnings({
     <section
       ref={cardRef}
       aria-label={title}
-      className={`w-full min-w-0 rounded-[22px] bg-white p-4 text-neutral-700 antialiased dark:bg-[#0b0b0c] dark:text-neutral-300 sm:p-6 ${ring} ${className}`}
-      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 28px 56px -36px rgba(0,0,0,0.25)" }}
+      className={`w-full min-w-0 rounded-[22px] bg-surface p-4 text-foreground antialiased sm:p-6 ${ring} ${className}`}
     >
       {/* header */}
       <div className="flex items-center justify-between gap-3">
@@ -380,11 +297,11 @@ export function Earnings({
       {/* readout */}
       <div className="mt-4" aria-live="polite">
         <p className={`h-[18px] truncate text-[12.5px] ${muted}`}>{readout.label}</p>
-        <p className="mt-1 text-[36px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-neutral-900 dark:text-neutral-50 sm:text-[44px]">
+        <p className="mt-1 text-[22px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-foreground sm:text-[26px]">
           <AnimatedNumber
             value={readout.value}
-            format={readout.value === total && !src && scrub === null ? money : moneyExact}
-            duration={src || scrub !== null ? 0.25 : 0.9}
+            format={readout.value === total && !src ? money : moneyExact}
+            duration={src ? 0.25 : 0.9}
             fromZero={anim}
           />
         </p>
@@ -406,54 +323,7 @@ export function Earnings({
         </p>
       </div>
 
-      {/* trend */}
-      <div ref={sparkRef} className="mt-4" style={{ height: SPARK_H }}>
-        {n > 1 && (
-          <svg
-            ref={svgRef}
-            width={width}
-            height={SPARK_H}
-            role="img"
-            aria-label={`Earnings trend, ${period.label}. Use left and right arrow keys to inspect.`}
-            tabIndex={0}
-            onKeyDown={onSparkKey}
-            onPointerMove={scrubTo}
-            onPointerDown={scrubTo}
-            onPointerLeave={(e) => {
-              if (e.pointerType === "mouse") setScrub(null);
-            }}
-            onBlur={() => setScrub(null)}
-            className="block touch-pan-y overflow-visible rounded-md outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/60 dark:focus-visible:ring-white/30"
-          >
-            <defs>
-              <linearGradient id={`${uid}-a`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor={accent} stopOpacity="0.26" />
-                <stop offset="1" stopColor={accent} stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <motion.path
-              fill={`url(#${uid}-a)`}
-              initial={anim ? { opacity: 0, d: area } : false}
-              animate={{ opacity: 1, d: area }}
-              transition={{ d: spring, opacity: { duration: 0.8, delay: anim ? 0.4 : 0 } }}
-            />
-            <motion.path
-              fill="none"
-              stroke={accent}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              initial={anim ? { pathLength: 0, d: line } : false}
-              animate={{ pathLength: 1, d: line }}
-              transition={{ d: spring, pathLength: { duration: 1.1, ease: EASE_OUT, delay: 0.1 } }}
-            />
-            <motion.g initial={false} animate={{ opacity: scrub === null ? 0 : 1 }} transition={{ duration: 0.12 }}>
-              <motion.line y1={0} y2={SPARK_H} x1={curX} x2={curX} strokeDasharray="2 3" className="stroke-black/20 dark:stroke-white/25" />
-              <motion.circle cx={curX} cy={curY} r={4.5} fill={accent} strokeWidth={2} className="stroke-white dark:stroke-[#0b0b0c]" />
-            </motion.g>
-          </svg>
-        )}
-      </div>
+
 
       {/* split bar */}
       <div className="mt-6 flex h-3 w-full gap-[3px]" role="presentation">
@@ -468,12 +338,9 @@ export function Earnings({
               initial={anim ? { flexGrow: 0 } : false}
               animate={{ flexGrow: Math.max(share, 0.004), scaleY: activeSource === s.id ? 1.5 : 1 }}
               transition={anim ? { type: "spring", duration: 0.8, bounce: 0.1, delay: i * 0.06 } : spring}
-              onPointerEnter={(e) => e.pointerType === "mouse" && (setActiveSource(s.id), setScrub(null))}
+              onPointerEnter={(e) => e.pointerType === "mouse" && setActiveSource(s.id)}
               onPointerLeave={(e) => e.pointerType === "mouse" && setActiveSource(null)}
-              onClick={() => {
-                setActiveSource((a) => (a === s.id ? null : s.id));
-                setScrub(null);
-              }}
+              onClick={() => setActiveSource((a) => (a === s.id ? null : s.id))}
             />
           );
         })}
@@ -491,14 +358,11 @@ export function Earnings({
               <button
                 type="button"
                 aria-pressed={on}
-                onPointerEnter={(e) => e.pointerType === "mouse" && (setActiveSource(s.id), setScrub(null))}
+                onPointerEnter={(e) => e.pointerType === "mouse" && setActiveSource(s.id)}
                 onPointerLeave={(e) => e.pointerType === "mouse" && setActiveSource(null)}
                 onFocus={() => setActiveSource(s.id)}
                 onBlur={() => setActiveSource(null)}
-                onClick={() => {
-                  setActiveSource((a) => (a === s.id ? null : s.id));
-                  setScrub(null);
-                }}
+                onClick={() => setActiveSource((a) => (a === s.id ? null : s.id))}
                 className={cx(
                   "group relative flex min-h-[56px] w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition-[background-color,opacity] duration-150 [-webkit-tap-highlight-color:transparent]",
                   on ? "bg-black/[0.04] dark:bg-white/[0.05]" : "[@media(hover:hover)]:hover:bg-black/[0.03] dark:[@media(hover:hover)]:hover:bg-white/[0.04]",
