@@ -37,6 +37,10 @@ export interface DonutChartProps {
   thickness?: number;
   /** Text above the total in the centre */
   centerLabel?: string;
+  /** Optional readout for gauges whose total represents the full target. */
+  centerValue?: number;
+  /** Moves the semi-gauge readout upward into the arc, in pixels. */
+  centerOffset?: number;
   formatValue?: (n: number) => string;
   showLegend?: boolean;
   animated?: boolean;
@@ -141,6 +145,8 @@ export function DonutChart({
   size = 240,
   thickness = 16,
   centerLabel = "Total",
+  centerValue,
+  centerOffset = 0,
   formatValue = defaultFormat,
   showLegend = true,
   animated = true,
@@ -226,7 +232,7 @@ export function DonutChart({
         </svg>
 
         {/* centre readout */}
-        <div className={cx("pointer-events-none absolute inset-x-0 flex flex-col items-center text-center", semi ? "bottom-0 justify-end" : "inset-y-0 justify-center")}>
+        <div className={cx("pointer-events-none absolute inset-x-0 flex flex-col items-center text-center", semi ? "bottom-0 justify-end" : "inset-y-0 justify-center")} style={semi ? { bottom: centerOffset } : undefined}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={active ?? "total"}
@@ -238,7 +244,7 @@ export function DonutChart({
             >
               <p className={`truncate text-[12px] ${muted}`}>{act ? act.label : centerLabel}</p>
               <p className="font-semibold leading-tight tracking-[-0.03em] tabular-nums text-neutral-900 dark:text-neutral-50" style={{ fontSize: valueSize }}>
-                {act ? formatValue(act.value) : <AnimatedNumber value={total} format={formatValue} fromZero={anim} />}
+                {act ? formatValue(act.value) : <AnimatedNumber value={centerValue ?? total} format={formatValue} fromZero={anim} />}
               </p>
               {act && <p className={`text-[12px] tabular-nums ${muted}`}>{Math.round(act.f * 100)}%</p>}
             </motion.div>

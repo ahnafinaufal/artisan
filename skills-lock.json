@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "skills": {
+    "heroui-migration": {
+      "source": "heroui-inc/heroui",
+      "commit": "9adb9c89305ed814ff160a7368b7e8575a50f790",
+      "sourceType": "github",
+      "skillPath": "skills/heroui-migration/SKILL.md",
+      "computedHash": "1a55aad318178c063c663dd724842567560d9b8e6b967559968ebfe03ac98e3b"
+    },
+    "heroui-native": {
+      "source": "heroui-inc/heroui",
+      "commit": "9adb9c89305ed814ff160a7368b7e8575a50f790",
+      "sourceType": "github",
+      "skillPath": "skills/heroui-native/SKILL.md",
+      "computedHash": "d61f68d3a14fc444ddbb9c7341656c767982cb83fc7c9e1e71352dde74eec07d"
+    },
+    "heroui-react": {
+      "source": "heroui-inc/heroui",
+      "commit": "9adb9c89305ed814ff160a7368b7e8575a50f790",
+      "sourceType": "github",
+      "skillPath": "skills/heroui-react/SKILL.md",
+      "computedHash": "92d0ba29cb5e866f9174f780a452d874ed8ec890c594772664ba38ce1e61c505"
+    },
+    "heroui-theming": {
+      "source": "heroui-inc/heroui",
+      "commit": "9adb9c89305ed814ff160a7368b7e8575a50f790",
+      "sourceType": "github",
+      "skillPath": "skills/heroui-theming/SKILL.md",
+      "computedHash": "2ba07cb1a6fd7096c84c7b19c8c6f3b32cfe5cefa27bd8a97be1af6f3f93184e"
+    }
+  }
+}
