@@ -53,6 +53,8 @@ export interface IdeaHistoryItem {
   actor: string;
   action: string;
   timestamp: string;
+  kind?: "edit" | "status" | "activity";
+  details?: string;
 }
 
 export interface ContentIdea {

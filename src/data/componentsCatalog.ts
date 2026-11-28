@@ -593,6 +593,13 @@ export const HEROUI_COMPONENTS: HeroComponentItem[] = [
 
   // Charts
   {
+    name: "ActivityHeatmap",
+    category: "Charts",
+    atomicLevel: "organism",
+    description: "Contribution calendar and weekday-by-hour grid with tooltips and keyboard navigation",
+    href: "https://easyui.site/r/activity-heatmap.json",
+  },
+  {
     name: "AreaChart",
     category: "Charts",
     atomicLevel: "organism",
@@ -623,6 +630,27 @@ export const HEROUI_COMPONENTS: HeroComponentItem[] = [
     description: "Combines bar, line, and area series for multi-metric dashboards",
     href: "https://heroui.pro/docs/react/components/composed-chart",
     isPro: true,
+  },
+  {
+    name: "DonutChart",
+    category: "Charts",
+    atomicLevel: "organism",
+    description: "Animated SVG donut and half-ring gauge with hover highlighting and filtering legend",
+    href: "https://easyui.site/r/donut-chart.json",
+  },
+  {
+    name: "Earnings",
+    category: "Charts",
+    atomicLevel: "organism",
+    description: "Earnings summary card with count-up total, scrubable trend, and source breakdown",
+    href: "https://easyui.site/r/earnings.json",
+  },
+  {
+    name: "FunnelChart",
+    category: "Charts",
+    atomicLevel: "organism",
+    description: "Conversion funnel with per-stage widths, curved drop-off bridges, and loss chips",
+    href: "https://easyui.site/r/funnel-chart.json",
   },
   {
     name: "LineChart",

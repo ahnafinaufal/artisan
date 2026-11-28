@@ -46,8 +46,10 @@ Pemetaan komponen mengikuti tiga lapisan utama:
 ---
 
 ## 4. Alur Navigasi & State (`src/App.tsx`)
-Aplikasi menggunakan *section-based state routing* di `src/App.tsx`:
+Aplikasi menggunakan *section-based state routing* di `src/App.tsx` dan pemetaan URL di `src/navigation.ts`:
 - **`activeSection` (`ActiveSection` union):** Menentukan section yang dirender di `<main>`.
+- **Workspace:** `/workspace` membuka Dashboard; `/workspace/bank-ide` membuka Bank Ide, dengan turunan `/create`, `/edit/:id`, dan `/view/:id`. URL lama `/bank-ide` dialihkan ke jalur Workspace.
+- **Components:** `/components` membuka katalog; `/components/:section` membuka showcase, sedangkan `/components/detail/:name` membuka detail generik. Navigasi browser *back/forward* memulihkan section dari URL.
 - **Catalog Filters:** `selectedLevel` (`"all" | "atom" | "molecule" | "organism"`), `selectedCategory` (`"all" | ComponentCategory`), dan `searchQuery` (otomatis mengarahkan ke `"catalog"` saat diketik).
 - **Mapping Komponen:**
   - `COMPONENT_SECTION_MAP` di `src/components/organisms/Sidebar.tsx` memetakan nama komponen → `ActiveSection`.
