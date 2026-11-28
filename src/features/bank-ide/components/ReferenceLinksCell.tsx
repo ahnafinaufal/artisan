@@ -10,6 +10,7 @@ import { PlatformLogo } from "./PlatformLogo";
 
 interface ReferenceLinksCellProps {
   links: string[];
+  variant?: "dropdown" | "list";
 }
 
 function getDomain(url: string): string {
@@ -84,13 +85,67 @@ function GroupHeader({ domain, label }: { domain: string; label: string }) {
   );
 }
 
-export function ReferenceLinksCell({ links }: ReferenceLinksCellProps) {
+export function ReferenceLinksCell({
+  links,
+  variant = "dropdown",
+}: ReferenceLinksCellProps) {
   if (links.length === 0) {
     return <span className="text-xs text-muted">–</span>;
   }
 
   const groups = groupLinksByDomain(links);
   const isSingleGroup = groups.length === 1;
+
+  if (variant === "list") {
+    return (
+      <div className="space-y-1">
+        {groups.map((group) => (
+          <div key={group.domain} className="space-y-0.5">
+            <div className="flex items-center gap-2 px-1 py-1">
+              {getPlatformFromDomain(group.domain) ? (
+                <PlatformLogo
+                  platform={getPlatformFromDomain(group.domain)!}
+                  className="h-4 w-4 shrink-0"
+                />
+              ) : (
+                <Globe className="h-4 w-4 shrink-0 text-muted" />
+              )}
+              <span className="text-[11px] font-medium text-muted">
+                {isSingleGroup
+                  ? `Referensi (${links.length})`
+                  : group.domain}
+              </span>
+            </div>
+
+            <div className="space-y-0.5">
+              {group.items.map((url, index) => (
+                <a
+                  key={`${group.domain}-${index}`}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-secondary/60"
+                >
+                  <div className="flex h-8 items-start justify-center pt-px">
+                    <Link2 className="h-4 w-4 shrink-0 text-muted" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <Label className="block truncate">
+                      {getPathLabel(url)}
+                    </Label>
+                    <Description className="block truncate" title={url}>
+                      {url}
+                    </Description>
+                  </div>
+                  <ExternalLink className="h-3 w-3 shrink-0 text-muted" />
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <Dropdown>

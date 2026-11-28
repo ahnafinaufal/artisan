@@ -22,6 +22,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
+import { ConceptStoryboard } from "./components/ConceptStoryboard";
 import { PIC_IMAGE } from "./components/IdeaDetailDrawer";
 import { PlatformLogo } from "./components/PlatformLogo";
 import { ReferenceLinksCell } from "./components/ReferenceLinksCell";
@@ -281,6 +282,8 @@ export function IdeaDetailPage({
             </div>
           </Card>
 
+          <ConceptStoryboard idea={idea} />
+
           <Card className="space-y-4 p-5">
             <SectionHeading icon={<MessageSquare className="h-4 w-4" />} title="Komentar" />
             {idea.comments?.length ? (
@@ -344,20 +347,8 @@ export function IdeaDetailPage({
 
         <aside className="space-y-4 lg:sticky lg:top-20">
           <Card className="space-y-3 p-5">
-            <h3 className="text-sm font-semibold text-foreground">Konsep Visual / Story Board</h3>
-            <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-border bg-surface text-center">
-              <div className="space-y-1 px-4">
-                <p className="text-sm font-medium text-foreground">Belum ada konsep visual</p>
-                <p className="text-xs text-muted">
-                  Story board dan referensi visual akan tampil di sini.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="space-y-3 p-5">
             <h3 className="text-sm font-semibold text-foreground">Referensi</h3>
-            <ReferenceLinksCell links={idea.referenceLinks ?? []} />
+            <ReferenceLinksCell links={idea.referenceLinks ?? []} variant="list" />
           </Card>
         </aside>
       </div>

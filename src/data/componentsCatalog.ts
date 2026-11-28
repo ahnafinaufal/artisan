@@ -582,6 +582,14 @@ export const HEROUI_COMPONENTS: HeroComponentItem[] = [
     href: "https://heroui.pro/docs/react/components/kpi",
     isPro: true,
   },
+  {
+    name: "Timeline",
+    category: "Data Display",
+    atomicLevel: "molecule",
+    description: "A composable React timeline for web activity feeds, event histories, and milestones",
+    href: "https://heroui.pro/docs/react/components/timeline",
+    isPro: true,
+  },
 
   // Charts
   {

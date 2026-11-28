@@ -9,3 +9,4 @@ export * from "./SearchInput";
 export * from "./SelectField";
 export * from "./SidebarNavItem";
 export * from "./StatusAlert";
+export * from "./Timeline";

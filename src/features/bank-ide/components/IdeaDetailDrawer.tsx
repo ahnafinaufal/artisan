@@ -7,6 +7,7 @@ import {
   Chip,
   DateField,
   DatePicker,
+  Disclosure,
   Drawer,
   Input,
   Label,
@@ -30,6 +31,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { BRANDS, CAMPAIGNS, PICS } from "../mockData";
+import { ConceptStoryboard } from "./ConceptStoryboard";
 import {
   FORMATS,
   OBJECTIVES,
@@ -245,7 +247,7 @@ export function IdeaDetailDrawer({
   return (
     <Drawer isOpen={isOpen} onOpenChange={onOpenChange}>
       <Drawer.Backdrop>
-        <Drawer.Content placement="right" className="w-full max-w-2xl bg-background">
+        <Drawer.Content placement="right" className="w-full max-w-3xl bg-background">
           <Drawer.Dialog className="flex h-full flex-col bg-background">
             <Drawer.Header className="border-b border-border bg-surface px-6 py-4">
               <div className="flex items-center justify-between gap-3">
@@ -682,6 +684,23 @@ export function IdeaDetailDrawer({
                       placeholder="Call to action..."
                     />
                   </div>
+
+                  <Disclosure defaultExpanded className="border-t border-border/60 pt-3.5">
+                    <Disclosure.Heading>
+                      <Disclosure.Trigger className="flex w-full items-center justify-between gap-3 text-left">
+                        <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+                          <Clapperboard className="h-4 w-4 text-accent" />
+                          Lihat template storyboard
+                        </span>
+                        <Disclosure.Indicator />
+                      </Disclosure.Trigger>
+                    </Disclosure.Heading>
+                    <Disclosure.Content>
+                      <Disclosure.Body className="pt-3">
+                        <ConceptStoryboard idea={form} compact />
+                      </Disclosure.Body>
+                    </Disclosure.Content>
+                  </Disclosure>
                 </div>
               </section>
 
